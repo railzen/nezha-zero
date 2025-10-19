@@ -13,7 +13,7 @@ yellow='\033[0;33m'
 plain='\033[0m'
 export PATH="$PATH:/usr/local/bin"
 
-NZ_MAIN_VERSION="v0.20.18"
+NZ_MAIN_VERSION="v0.20.16"
 
 os_arch=""
 [ -e /etc/os-release ] && grep -i "PRETTY_NAME" /etc/os-release | grep -qi "alpine" && os_alpine='1'
