@@ -37,3 +37,14 @@ curl -L https://raw.githubusercontent.com/railzen/nezhazero/main/installScript/n
 
 You can change the dashboard language in the settings page (`/setting`) after the dashboard is installed.
 
+## Note
+半透明模式的开关默认隐藏，打开半透明模式需要在自定义代码中添加:
+
+```bash
+<script>
+	// server-status 默认开启分组
+    localStorage.setItem("showGroup", true);
+    // server-status 默认打开半透明模式
+    localStorage.setItem("semiTransparent", true); 
+</script>
+```
