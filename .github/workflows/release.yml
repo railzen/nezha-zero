@@ -98,6 +98,7 @@ jobs:
             assets/*/*/*.zip
             repos/agent/bin/*.zip
           generateReleaseNotes: false
+          prerelease: true
           
   release-docker:
     runs-on: ubuntu-latest
