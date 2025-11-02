@@ -22,7 +22,7 @@
 最新Agent版本以上面标签展示为准，放在Release里面仅便于使用。Agent已经关闭自动升级功能，如无必要不会升级。面板将尽可能减少更新以稳定版本。一键安装脚本如下：
 
 ```shell
-curl -L https://raw.githubusercontent.com/railzen/nezhazero/main/script/neza.sh -o neza.sh && chmod +x neza.sh && ./neza.sh
+curl -L https://raw.githubusercontent.com/railzen/nezhazero/main/script/naza.sh -o naza.sh && chmod +x naza.sh && ./naza.sh
 ```
 
 
