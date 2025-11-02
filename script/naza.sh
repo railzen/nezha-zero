@@ -209,13 +209,13 @@ select_version() {
 update_script() {
     echo "> 更新脚本"
 
-    curl -sL https://${GITHUB_RAW_URL}/neza.sh -o /tmp/neza.sh
-    mv -f /tmp/neza.sh ./neza.sh && chmod a+x ./neza.sh
+    curl -sL https://${GITHUB_RAW_URL}/naza.sh -o /tmp/naza.sh
+    mv -f /tmp/naza.sh ./naza.sh && chmod a+x ./naza.sh
 
     echo "3s后执行新脚本"
     sleep 3s
     clear
-    exec ./neza.sh
+    exec ./naza.sh
     exit 0
 }
 
@@ -834,21 +834,21 @@ clean_all() {
 show_usage() {
     echo "哪吒监控 管理脚本使用方法: "
     echo "--------------------------------------------------------"
-    echo "./neza.sh                            - 显示管理菜单"
-    echo "./neza.sh install_dashboard          - 安装面板端"
-    echo "./neza.sh modify_dashboard_config    - 修改面板配置"
-    echo "./neza.sh start_dashboard            - 启动面板"
-    echo "./neza.sh stop_dashboard             - 停止面板"
-    echo "./neza.sh restart_and_update         - 重启并更新面板"
-    echo "./neza.sh show_dashboard_log         - 查看面板日志"
-    echo "./neza.sh uninstall_dashboard        - 卸载管理面板"
+    echo "./naza.sh                            - 显示管理菜单"
+    echo "./naza.sh install_dashboard          - 安装面板端"
+    echo "./naza.sh modify_dashboard_config    - 修改面板配置"
+    echo "./naza.sh start_dashboard            - 启动面板"
+    echo "./naza.sh stop_dashboard             - 停止面板"
+    echo "./naza.sh restart_and_update         - 重启并更新面板"
+    echo "./naza.sh show_dashboard_log         - 查看面板日志"
+    echo "./naza.sh uninstall_dashboard        - 卸载管理面板"
     echo "--------------------------------------------------------"
-    echo "./neza.sh install_agent              - 安装监控Agent"
-    echo "./neza.sh modify_agent_config        - 修改Agent配置"
-    echo "./neza.sh show_agent_log             - 查看Agent日志"
-    echo "./neza.sh uninstall_agent            - 卸载Agent"
-    echo "./neza.sh restart_agent              - 重启Agent"
-    echo "./neza.sh update_script              - 更新脚本"
+    echo "./naza.sh install_agent              - 安装监控Agent"
+    echo "./naza.sh modify_agent_config        - 修改Agent配置"
+    echo "./naza.sh show_agent_log             - 查看Agent日志"
+    echo "./naza.sh uninstall_agent            - 卸载Agent"
+    echo "./naza.sh restart_agent              - 重启Agent"
+    echo "./naza.sh update_script              - 更新脚本"
     echo "--------------------------------------------------------"
 }
 
