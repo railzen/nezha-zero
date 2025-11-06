@@ -97,7 +97,7 @@ jobs:
           artifacts: |
             assets/*/*/*.zip
             repos/agent/bin/*.zip
-          generateReleaseNotes: false
+          generateReleaseNotes: true
           prerelease: true
           
   release-docker:
