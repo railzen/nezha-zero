@@ -51,7 +51,7 @@
             <td style="text-align: center;" class="node-cell uptime">@#node.uptime#@</td>
             <td v-if="group.data.some(item => item.additional && item.additional.remaining && Object.keys(item.additional.remaining).length > 0)" style="text-align: center;" class="node-cell remaining">
                 <template v-if="node.additional && node.additional.remaining.days">
-                    <span v-if="node.additional.remaining.days == 'lifetime'" :style="{ color: '#e8e8e8' }">FREE</span>
+                    <span v-if="node.additional.remaining.days == 'lifetime'" :style="{ color: '#a0a0a0' }">FREE</span>
                     <span v-else-if="node.additional.remaining.days < 0">{{tr "Expired"}}</span>
                     <span v-else class="node-cell-remaining-days" :style="{
                         color: node.additional.remaining.days < 5 ? '#ee1c25' : (node.additional.remaining.days < 10 && node.additional.remaining.days >= 5 ? '#fed12c' : '') }">
