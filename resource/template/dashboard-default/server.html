@@ -27,6 +27,7 @@
                     <th>{{tr "Name"}}</th>
                     <th>{{tr "ServerGroup"}}</th>
                     <th>IP</th>
+                    <th>Copy</th>
                     <th>{{tr "VersionNumber"}}</th>
                     <th>{{tr "EnableDDNS"}}</th>
                     <th>{{tr "HideForGuest"}}</th>
@@ -45,6 +46,13 @@
                     <td>{{$server.Name}}</td>
                     <td>{{$server.Tag}}</td>
                     <td>{{$server.Host.IP}}</td>
+                    <td>
+                        <button class="ui icon green mini button"
+                            data-clipboard-text="{{$server.Host.IP}}"
+                            data-tooltip="{{tr "ClickToCopy"}}IPv4">
+                            <i class="copy icon"></i>
+                        </button>
+                    </td>
                     <td>{{$server.Host.Version}}</td>
                     <td>{{$server.EnableDDNS}}</td>
                     <td>{{$server.HideForGuest}}</td>
@@ -228,4 +236,21 @@
         showConfirm('{{tr "DeleteServer"}}', '{{tr "ConfirmToDeleteServer"}}', () => postJson('/api/batch-delete-server', servers), '')
     }
 </script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // 找到所有按钮
+    document.querySelectorAll('[data-clipboard-text]').forEach(function(btn) {
+        let ip = btn.getAttribute('data-clipboard-text');
+        if (!ip) return;
+
+        // 匹配 IPv4 地址
+        const match = ip.match(/\b\d{1,3}(?:\.\d{1,3}){3}\b/);
+        if (match) {
+            // 把 data-clipboard-text 替换成纯 IPv4
+            btn.setAttribute('data-clipboard-text', match[0]);
+        }
+    });
+});
+</script>
+
 {{end}}
