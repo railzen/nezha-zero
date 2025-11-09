@@ -121,27 +121,27 @@ pre_check() {
     fi
 
     local _version=${NZ_MAIN_VERSION}
-    if [ -n "$CUSTOM_MIRROR" ]; then
-        GITHUB_RAW_URL="raw.githubusercontent.com/railzen/NezhaZero/main/script"
+#    if [ -n "$CUSTOM_MIRROR" ]; then
+        GITHUB_RAW_URL="raw.githubusercontent.com/railzen/nezha-zero/main/script"
         GITHUB_URL=$CUSTOM_MIRROR
         Get_Docker_URL="get.docker.com"
         Get_Docker_Argu=" -s docker --mirror Aliyun"
         Docker_IMG="railzen\/nezha-zero-dashboard:${_version}"
-    else
-        if [ -z "$CN" ]; then
-            GITHUB_RAW_URL="raw.githubusercontent.com/railzen/NezhaZero/main/script"
-            GITHUB_URL="github.com"
-            Get_Docker_URL="get.docker.com"
-            Get_Docker_Argu=" "
-            Docker_IMG="railzen\/nezha-zero-dashboard:${_version}"
-        else
-            GITHUB_RAW_URL="raw.githubusercontent.com/railzen/NezhaZero/main/script"
-            GITHUB_URL="github.com"
-            Get_Docker_URL="get.docker.com"
-            Get_Docker_Argu=" -s docker --mirror Aliyun"
-            Docker_IMG="railzen\/nezha-zero-dashboard:${_version}"
-        fi
-    fi
+#    else
+#        if [ -z "$CN" ]; then
+#            GITHUB_RAW_URL="raw.githubusercontent.com/railzen/nezha-zero/main/script"
+#            GITHUB_URL="github.com"
+#            Get_Docker_URL="get.docker.com"
+#            Get_Docker_Argu=" "
+#            Docker_IMG="railzen\/nezha-zero-dashboard:${_version}"
+#        else
+#            GITHUB_RAW_URL="raw.githubusercontent.com/railzen/nezha-zero/main/script"
+#            GITHUB_URL="github.com"
+#            Get_Docker_URL="get.docker.com"
+#            Get_Docker_Argu=" -s docker --mirror Aliyun"
+#            Docker_IMG="railzen\/nezha-zero-dashboard:${_version}"
+#        fi
+#    fi
 }
 
 installation_check() {
@@ -390,10 +390,10 @@ install_agent() {
     echo "正在下载监控端"
     if [ -z "$CN" ]; then
         NZ_AGENT_URL="https://${GITHUB_URL}/nezhahq/agent/releases/download/${_version}/nezha-agent_linux_${os_arch}.zip"
-        #NZ_AGENT_URL="https://${GITHUB_URL}/railzen/NezhaZero/releases/download/${_version}/nezha-agent_linux_${os_arch}.zip"
+        #NZ_AGENT_URL="https://${GITHUB_URL}/railzen/nezha-zero/releases/download/${_version}/nezha-agent_linux_${os_arch}.zip"
     else
         NZ_AGENT_URL="https://${GITHUB_URL}/naibahq/agent/releases/download/${_version}/nezha-agent_linux_${os_arch}.zip"
-        #NZ_AGENT_URL="https://${GITHUB_URL}/railzen/NezhaZero/releases/download/${_version}/nezha-agent_linux_${os_arch}.zip"
+        #NZ_AGENT_URL="https://${GITHUB_URL}/railzen/nezha-zero/releases/download/${_version}/nezha-agent_linux_${os_arch}.zip"
     fi
 
     _cmd="wget -t 2 -T 60 -O nezha-agent_linux_${os_arch}.zip $NZ_AGENT_URL >/dev/null 2>&1"
@@ -639,9 +639,9 @@ restart_and_update_standalone() {
     fi
 
     if [ -z "$CN" ]; then
-        NZ_DASHBOARD_URL="https://${GITHUB_URL}/railzen/NezhaZero/releases/download/${_version}/dashboard-linux-${os_arch}.zip"
+        NZ_DASHBOARD_URL="https://${GITHUB_URL}/railzen/nezha-zero/releases/download/${_version}/dashboard-linux-${os_arch}.zip"
     else
-        NZ_DASHBOARD_URL="https://${GITHUB_URL}/railzen/NezhaZero/releases/download/${_version}/dashboard-linux-${os_arch}.zip"
+        NZ_DASHBOARD_URL="https://${GITHUB_URL}/railzen/nezha-zero/releases/download/${_version}/dashboard-linux-${os_arch}.zip"
     fi
 
     sudo wget -qO $NZ_DASHBOARD_PATH/app.zip "$NZ_DASHBOARD_URL" >/dev/null 2>&1 && sudo unzip -qq -o $NZ_DASHBOARD_PATH/app.zip -d $NZ_DASHBOARD_PATH && sudo mv $NZ_DASHBOARD_PATH/dashboard-linux-$os_arch $NZ_DASHBOARD_PATH/app && sudo rm $NZ_DASHBOARD_PATH/app.zip
