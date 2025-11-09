@@ -19,7 +19,7 @@
 ## Abstract
 基于哪吒V0版本进行二次修改，主要更新了GEOIP库和管理界面安装Agent的链接，同时进行了一些样式优化。
 
-最新Agent版本以上面标签展示为准，放在Release里面仅便于使用。Agent已经关闭自动升级功能，如无必要不会升级。面板将尽可能减少更新以稳定版本。一键安装脚本如下：
+最新Agent版本以上面标签展示为准，放在Release里面仅便于使用。Agent已经关闭自动升级功能，如无必要不会升级。稳定后面板将尽可能减少更新以稳定版本，但目前还在快速迭代，不建议使用。一键安装脚本如下：
 
 ```shell
 curl -L https://raw.githubusercontent.com/railzen/nezha-zero/main/script/naza.sh -o naza.sh && chmod +x naza.sh && ./naza.sh
