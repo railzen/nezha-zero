@@ -13,7 +13,7 @@ yellow='\033[0;33m'
 plain='\033[0m'
 export PATH="$PATH:/usr/local/bin"
 
-NZ_MAIN_VERSION="v0.20.17"
+NZ_MAIN_DEFAULT_VERSION="v0.20.17"
 
 os_arch=""
 [ -e /etc/os-release ] && grep -i "PRETTY_NAME" /etc/os-release | grep -qi "alpine" && os_alpine='1'
@@ -120,13 +120,28 @@ pre_check() {
         fi
     fi
 
+    NZ_MAIN_VERSION=$(curl -m 10 -sL "https://api.github.com/repos/railzen/nezha-zero/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')
+    if [ -z "$NZ_MAIN_VERSION" ]; then
+        NZ_MAIN_VERSION=$NZ_MAIN_DEFAULT_VERSION
+        err "获取 Agent 版本号失败，使用默认版本号${NZ_MAIN_VERSION}"
+    else
+        echo "当前最新版本为： ${NZ_MAIN_VERSION}"
+    fi
+
     local _version=${NZ_MAIN_VERSION}
+    
+    GITHUB_RAW_URL="raw.githubusercontent.com/railzen/nezha-zero/main/script"
+    GITHUB_URL="github.com"
+    Get_Docker_URL="get.docker.com"
+    Get_Docker_Argu=" "
+    Docker_IMG="railzen\/nezha-zero-dashboard:${_version}"
+
 #    if [ -n "$CUSTOM_MIRROR" ]; then
-        GITHUB_RAW_URL="raw.githubusercontent.com/railzen/nezha-zero/main/script"
-        GITHUB_URL=$CUSTOM_MIRROR
-        Get_Docker_URL="get.docker.com"
-        Get_Docker_Argu=" -s docker --mirror Aliyun"
-        Docker_IMG="railzen\/nezha-zero-dashboard:${_version}"
+#        GITHUB_RAW_URL="raw.githubusercontent.com/railzen/nezha-zero/main/script"
+#        GITHUB_URL=$CUSTOM_MIRROR
+#        Get_Docker_URL="get.docker.com"
+#        Get_Docker_Argu=" -s docker --mirror Aliyun"
+#        Docker_IMG="railzen\/nezha-zero-dashboard:${_version}"
 #    else
 #        if [ -z "$CN" ]; then
 #            GITHUB_RAW_URL="raw.githubusercontent.com/railzen/nezha-zero/main/script"

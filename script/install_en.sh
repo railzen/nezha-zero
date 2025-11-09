@@ -13,6 +13,8 @@ yellow='\033[0;33m'
 plain='\033[0m'
 export PATH="$PATH:/usr/local/bin"
 
+NZ_MAIN_DEFAULT_VERSION="v0.20.17"
+
 os_arch=""
 [ -e /etc/os-release ] && grep -i "PRETTY_NAME" /etc/os-release | grep -qi "alpine" && os_alpine='1'
 
@@ -50,6 +52,7 @@ info() {
 }
 
 geo_check() {
+    return
     api_list="https://blog.cloudflare.com/cdn-cgi/trace https://dash.cloudflare.com/cdn-cgi/trace https://developers.cloudflare.com/cdn-cgi/trace"
     ua="Mozilla/5.0 (X11; Linux x86_64; rv:60.0) Gecko/20100101 Firefox/81.0"
     set -- "$api_list"
@@ -117,34 +120,50 @@ pre_check() {
         fi
     fi
 
-    if [ -n "$CUSTOM_MIRROR" ]; then
-        GITHUB_RAW_URL="gitee.com/naibahq/scripts/raw/v0"
-        GITHUB_URL=$CUSTOM_MIRROR
-        Get_Docker_URL="get.docker.com"
-        Get_Docker_Argu=" -s docker --mirror Aliyun"
-        Docker_IMG="registry.cn-shanghai.aliyuncs.com\/naibahq\/nezha-dashboard:v0.20.13"
+    NZ_MAIN_VERSION=$(curl -m 10 -sL "https://api.github.com/repos/railzen/nezha-zero/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')
+    if [ -z "$NZ_MAIN_VERSION" ]; then
+        NZ_MAIN_VERSION=$NZ_MAIN_DEFAULT_VERSION
+        err "Get Agent version failed，use default ${NZ_MAIN_VERSION}"
     else
-        if [ -z "$CN" ]; then
-            GITHUB_RAW_URL="raw.githubusercontent.com/nezhahq/scripts/v0"
-            GITHUB_URL="github.com"
-            Get_Docker_URL="get.docker.com"
-            Get_Docker_Argu=" "
-            Docker_IMG="ghcr.io\/naiba\/nezha-dashboard:v0.20.13"
-        else
-            GITHUB_RAW_URL="gitee.com/naibahq/scripts/raw/v0"
-            GITHUB_URL="gitee.com"
-            Get_Docker_URL="get.docker.com"
-            Get_Docker_Argu=" -s docker --mirror Aliyun"
-            Docker_IMG="registry.cn-shanghai.aliyuncs.com\/naibahq\/nezha-dashboard:v0.20.13"
-        fi
+        echo "Current Version： ${NZ_MAIN_VERSION}"
     fi
+
+    local _version=${NZ_MAIN_VERSION}
+    
+    GITHUB_RAW_URL="raw.githubusercontent.com/railzen/nezha-zero/main/script"
+    GITHUB_URL="github.com"
+    Get_Docker_URL="get.docker.com"
+    Get_Docker_Argu=" "
+    Docker_IMG="railzen\/nezha-zero-dashboard:${_version}"
+
+#    if [ -n "$CUSTOM_MIRROR" ]; then
+#        GITHUB_RAW_URL="raw.githubusercontent.com/railzen/nezha-zero/main/script"
+#        GITHUB_URL=$CUSTOM_MIRROR
+#        Get_Docker_URL="get.docker.com"
+#        Get_Docker_Argu=" -s docker --mirror Aliyun"
+#        Docker_IMG="railzen\/nezha-zero-dashboard:${_version}"
+#    else
+#        if [ -z "$CN" ]; then
+#            GITHUB_RAW_URL="raw.githubusercontent.com/railzen/nezha-zero/main/script"
+#            GITHUB_URL="github.com"
+#            Get_Docker_URL="get.docker.com"
+#            Get_Docker_Argu=" "
+#            Docker_IMG="railzen\/nezha-zero-dashboard:${_version}"
+#        else
+#            GITHUB_RAW_URL="raw.githubusercontent.com/railzen/nezha-zero/main/script"
+#            GITHUB_URL="github.com"
+#            Get_Docker_URL="get.docker.com"
+#            Get_Docker_Argu=" -s docker --mirror Aliyun"
+#            Docker_IMG="railzen\/nezha-zero-dashboard:${_version}"
+#        fi
+#    fi
 }
 
 installation_check() {
     if docker compose version >/dev/null 2>&1; then
         DOCKER_COMPOSE_COMMAND="docker compose"
         if sudo $DOCKER_COMPOSE_COMMAND ls | grep -qw "$NZ_DASHBOARD_PATH/docker-compose.yaml" >/dev/null 2>&1; then
-            NEZHA_IMAGES=$(sudo docker images --format "{{.Repository}}:{{.Tag}}" | grep -w "nezha-dashboard")
+            NEZHA_IMAGES=$(sudo docker images --format "{{.Repository}}:{{.Tag}}" | grep -w "nezha-zero-dashboard")
             if [ -n "$NEZHA_IMAGES" ]; then
                 echo "Docker image with nezha-dashboard repository exists:"
                 echo "$NEZHA_IMAGES"
@@ -205,13 +224,13 @@ select_version() {
 update_script() {
     echo "> Update Script"
 
-    curl -sL https://${GITHUB_RAW_URL}/install_en.sh -o /tmp/nezha.sh
-    mv -f /tmp/nezha.sh ./nezha.sh && chmod a+x ./nezha.sh
+    curl -sL https://${GITHUB_RAW_URL}/install_en.sh -o /tmp/naza.sh
+    mv -f /tmp/naza.sh ./naza.sh && chmod a+x ./naza.sh
 
     echo "Execute new script after 3s"
     sleep 3s
     clear
-    exec ./nezha.sh
+    exec ./naza.sh
     exit 0
 }
 
@@ -285,6 +304,10 @@ install_dashboard() {
         esac
     fi
 
+    if [ -z "$IS_DOCKER_NEZHA" ]; then
+        select_version
+    fi
+
     if [ "$IS_DOCKER_NEZHA" = 1 ]; then
         install_dashboard_docker
     elif [ "$IS_DOCKER_NEZHA" = 0 ]; then
@@ -339,6 +362,14 @@ selinux() {
 }
 
 install_agent() {
+
+    if [ -d "${NZ_AGENT_PATH}" ]; then
+        echo "> Exist old Agent，reinstall..."
+        sudo ${NZ_AGENT_PATH}/nezha-agent service uninstall
+        sudo rm -rf $NZ_AGENT_PATH
+        clean_all
+    fi
+
     install_base
     selinux
 
@@ -373,8 +404,10 @@ install_agent() {
     echo "Downloading Agent"
     if [ -z "$CN" ]; then
         NZ_AGENT_URL="https://${GITHUB_URL}/nezhahq/agent/releases/download/${_version}/nezha-agent_linux_${os_arch}.zip"
+        #NZ_AGENT_URL="https://${GITHUB_URL}/railzen/nezha-zero/releases/download/${_version}/nezha-agent_linux_${os_arch}.zip"
     else
         NZ_AGENT_URL="https://${GITHUB_URL}/naibahq/agent/releases/download/${_version}/nezha-agent_linux_${os_arch}.zip"
+        #NZ_AGENT_URL="https://${GITHUB_URL}/railzen/nezha-zero/releases/download/${_version}/nezha-agent_linux_${os_arch}.zip"
     fi
 
     _cmd="wget -t 2 -T 60 -O nezha-agent_linux_${os_arch}.zip $NZ_AGENT_URL >/dev/null 2>&1"
@@ -446,6 +479,11 @@ modify_agent_config() {
 
 modify_dashboard_config() {
     echo "> Modify Dashboard Configuration"
+
+    if [ -z "$IS_DOCKER_NEZHA" ]; then
+        select_version
+    fi
+
 
     if [ "$IS_DOCKER_NEZHA" = 1 ]; then
         if [ -n "$DOCKER_COMPOSE_COMMAND" ]; then
@@ -570,21 +608,21 @@ restart_and_update() {
 }
 
 restart_and_update_docker() {
-    update_docker_compose_image
-    sudo $DOCKER_COMPOSE_COMMAND -f ${NZ_DASHBOARD_PATH}/docker-compose.yaml pull
+    #update_docker_compose_image
+    #sudo $DOCKER_COMPOSE_COMMAND -f ${NZ_DASHBOARD_PATH}/docker-compose.yaml pull
     sudo $DOCKER_COMPOSE_COMMAND -f ${NZ_DASHBOARD_PATH}/docker-compose.yaml down
     sudo $DOCKER_COMPOSE_COMMAND -f ${NZ_DASHBOARD_PATH}/docker-compose.yaml up -d
 }
 
-update_docker_compose_image() {
-    yaml_file_path="${NZ_DASHBOARD_PATH}/docker-compose.yaml"
-    if grep -q "registry.cn-shanghai.aliyuncs.com/naibahq/nezha-dashboard$" "$yaml_file_path"; then
-        sed -i 's|registry.cn-shanghai.aliyuncs.com/naibahq/nezha-dashboard$|registry.cn-shanghai.aliyuncs.com/naibahq/nezha-dashboard:v0.20.13|' "$yaml_file_path"
-    fi
-    if grep -q "ghcr.io/naiba/nezha-dashboard$" "$yaml_file_path"; then
-        sed -i 's|ghcr.io/naiba/nezha-dashboard$|ghcr.io/naibahq/nezha-dashboard:v0.20.13|' "$yaml_file_path"
-    fi
-}
+#update_docker_compose_image() {
+#    yaml_file_path="${NZ_DASHBOARD_PATH}/docker-compose.yaml"
+#   if grep -q "registry.cn-shanghai.aliyuncs.com/naibahq/nezha-dashboard$" "$yaml_file_path"; then
+#        sed -i 's|registry.cn-shanghai.aliyuncs.com/naibahq/nezha-dashboard$|registry.cn-shanghai.aliyuncs.com/naibahq/nezha-dashboard:v0.20.13|' "$yaml_file_path"
+#    fi
+#    if grep -q "ghcr.io/naiba/nezha-dashboard$" "$yaml_file_path"; then
+#        sed -i 's|ghcr.io/naiba/nezha-dashboard$|ghcr.io/naibahq/nezha-dashboard:v0.20.13|' "$yaml_file_path"
+#    fi
+#}
 
 restart_and_update_standalone() {
     # _version=$(curl -m 10 -sL "https://api.github.com/repos/naiba/nezha/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')
@@ -598,7 +636,7 @@ restart_and_update_standalone() {
     #     _version=$(curl -m 10 -sL "https://gitee.com/api/v5/repos/naibahq/nezha/releases/latest" | awk -F '"' '{for(i=1;i<=NF;i++){if($i=="tag_name"){print $(i+2)}}}')
     # fi
 
-    _version="v0.20.13"
+    _version=${NZ_MAIN_VERSION}
 
     if [ -z "$_version" ]; then
         err "Fail to obtain Dashboard version, please check if the network can link https://api.github.com/repos/naiba/nezha/releases/latest"
@@ -615,9 +653,9 @@ restart_and_update_standalone() {
     fi
 
     if [ -z "$CN" ]; then
-        NZ_DASHBOARD_URL="https://${GITHUB_URL}/naiba/nezha/releases/download/${_version}/dashboard-linux-${os_arch}.zip"
+        NZ_DASHBOARD_URL="https://${GITHUB_URL}/railzen/nezha-zero/releases/download/${_version}/dashboard-linux-${os_arch}.zip"
     else
-        NZ_DASHBOARD_URL="https://${GITHUB_URL}/naibahq/nezha/releases/download/${_version}/dashboard-linux-${os_arch}.zip"
+        NZ_DASHBOARD_URL="https://${GITHUB_URL}/railzen/nezha-zero/releases/download/${_version}/dashboard-linux-${os_arch}.zip"
     fi
 
     sudo wget -qO $NZ_DASHBOARD_PATH/app.zip "$NZ_DASHBOARD_URL" >/dev/null 2>&1 && sudo unzip -qq -o $NZ_DASHBOARD_PATH/app.zip -d $NZ_DASHBOARD_PATH && sudo mv $NZ_DASHBOARD_PATH/dashboard-linux-$os_arch $NZ_DASHBOARD_PATH/app && sudo rm $NZ_DASHBOARD_PATH/app.zip
@@ -734,15 +772,16 @@ uninstall_dashboard() {
     clean_all
 
     if [ $# = 0 ]; then
-        before_show_menu
+        echo "Uninstall Success！"
+        exit 0
     fi
 }
 
 uninstall_dashboard_docker() {
     sudo $DOCKER_COMPOSE_COMMAND -f ${NZ_DASHBOARD_PATH}/docker-compose.yaml down
     sudo rm -rf $NZ_DASHBOARD_PATH
-    sudo docker rmi -f ghcr.io/naiba/nezha-dashboard >/dev/null 2>&1
-    sudo docker rmi -f registry.cn-shanghai.aliyuncs.com/naibahq/nezha-dashboard >/dev/null 2>&1
+    sudo docker rmi -f railzen/nezha-zero-dashboard >/dev/null 2>&1
+    sudo docker rmi -f registry.cn-shanghai.aliyuncs.com/railzen/nezha-zero-dashboard >/dev/null 2>&1
 }
 
 uninstall_dashboard_standalone() {
@@ -809,34 +848,33 @@ clean_all() {
 show_usage() {
     echo "Nezha Monitor Management Script Usage: "
     echo "--------------------------------------------------------"
-    echo "./nezha.sh                            - Show Menu"
-    echo "./nezha.sh install_dashboard          - Install Dashboard"
-    echo "./nezha.sh modify_dashboard_config    - Modify Dashboard Configuration"
-    echo "./nezha.sh start_dashboard            - Start Dashboard"
-    echo "./nezha.sh stop_dashboard             - Stop Dashboard"
-    echo "./nezha.sh restart_and_update         - Restart and Update the Dashboard"
-    echo "./nezha.sh show_dashboard_log         - View Dashboard Log"
-    echo "./nezha.sh uninstall_dashboard        - Uninstall Dashboard"
+    echo "./naza.sh                            - Show Menu"
+    echo "./naza.sh install_dashboard          - Install Dashboard"
+    echo "./naza.sh modify_dashboard_config    - Modify Dashboard Configuration"
+    echo "./naza.sh start_dashboard            - Start Dashboard"
+    echo "./naza.sh stop_dashboard             - Stop Dashboard"
+    echo "./naza.sh restart_and_update         - Restart and Update the Dashboard"
+    echo "./naza.sh show_dashboard_log         - View Dashboard Log"
+    echo "./naza.sh uninstall_dashboard        - Uninstall Dashboard"
     echo "--------------------------------------------------------"
-    echo "./nezha.sh install_agent              - Install Agent"
-    echo "./nezha.sh modify_agent_config        - Modify Agent Configuration"
-    echo "./nezha.sh show_agent_log             - View Agent Log"
-    echo "./nezha.sh uninstall_agent            - Uninstall Agent"
-    echo "./nezha.sh restart_agent              - Restart Agent"
-    echo "./nezha.sh update_script              - Update Script"
+    echo "./naza.sh install_agent              - Install Agent"
+    echo "./naza.sh modify_agent_config        - Modify Agent Configuration"
+    echo "./naza.sh show_agent_log             - View Agent Log"
+    echo "./naza.sh uninstall_agent            - Uninstall Agent"
+    echo "./naza.sh restart_agent              - Restart Agent"
+    echo "./naza.sh update_script              - Update Script"
     echo "--------------------------------------------------------"
 }
 
 show_menu() {
     printf "
-    ${green}Nezha Monitor Management Script For v0${plain}
-    --- https://github.com/naiba/nezha ---
-    ${red}v0 panel has stopped maintenance, please upgrade to v1 as soon as possible, see https://nezha.wiki/${plain}
+    ${green}Nezha Monitor Management Script For ${NZ_MAIN_VERSION}${plain}
+    --- https://github.com/railzen/nezha-zero ---
     ${green}1.${plain}  Install Dashboard
     ${green}2.${plain}  Modify Dashbaord Configuration
     ${green}3.${plain}  Start Dashboard
     ${green}4.${plain}  Stop Dashboard
-    ${green}5.${plain}  Restart and Update Dashboard
+    ${green}5.${plain}  Restart Dashboard
     ${green}6.${plain}  View Dashboard Log
     ${green}7.${plain}  Uninstall Dashboard
     ————————————————-
@@ -896,6 +934,7 @@ show_menu() {
             ;;
         *)
             err "Please enter the correct number [0-13]"
+            before_show_menu
             ;;
     esac
 }
@@ -906,6 +945,7 @@ installation_check
 if [ $# -gt 0 ]; then
     case $1 in
         "install_dashboard")
+            select_version
             install_dashboard 0
             ;;
         "modify_dashboard_config")
@@ -952,6 +992,6 @@ if [ $# -gt 0 ]; then
         *) show_usage ;;
     esac
 else
-    select_version
+    #select_version
     show_menu
 fi
