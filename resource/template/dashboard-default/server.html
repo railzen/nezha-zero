@@ -27,11 +27,11 @@
                     <th>{{tr "Name"}}</th>
                     <th>{{tr "ServerGroup"}}</th>
                     <th>IP</th>
-                    <th>Copy</th>
+                    <!-- <th>Copy</th> -->
                     <th>{{tr "VersionNumber"}}</th>
                     <th>{{tr "EnableDDNS"}}</th>
                     <th>{{tr "HideForGuest"}}</th>
-                    <th>{{tr "Secret"}}</th>
+                    <!-- <th>{{tr "Secret"}}</th> -->
                     <th>{{tr "OneKeyInstall"}}</th>
                     <th>{{tr "Note"}}</th>
                     <th>{{tr "PublicNote"}}</th>
@@ -45,22 +45,36 @@
                     <td>{{$server.ID}}({{$server.DisplayIndex}})</td>
                     <td>{{$server.Name}}</td>
                     <td>{{$server.Tag}}</td>
+                    <!--
                     <td>{{$server.Host.IP}}</td>
                     <td>
-                        <button class="ui icon green mini button"
+                        <button class="ui icon mini button ip-copy"
                             data-clipboard-text="{{$server.Host.IP}}"
                             data-tooltip="{{tr "ClickToCopy"}}IPv4">
                             <i class="copy icon"></i>
                         </button>
                     </td>
-                    <td>{{$server.Host.Version}}</td>
-                    <td>{{$server.EnableDDNS}}</td>
-                    <td>{{$server.HideForGuest}}</td>
-                    <td>
-                        <button class="ui icon green mini button" data-clipboard-text="{{$server.Secret}}" data-tooltip="{{tr "ClickToCopy"}}">
+                -->
+                    <td style="display: flex; justify-content: space-between; align-items: center; white-space: nowrap;">
+                        <span>{{$server.Host.IP}}</span>
+                        <button class="ui icon mini button ip-copy"
+                            data-clipboard-text="{{$server.Host.IP}}"
+                            data-tooltip="{{tr "ClickToCopy"}} IPv4"
+                            style="margin-left: 2px; flex-shrink: 0;">
                             <i class="copy icon"></i>
                         </button>
                     </td>
+
+                    <td>{{$server.Host.Version}}</td>
+                    <td>{{$server.EnableDDNS}}</td>
+                    <td>{{$server.HideForGuest}}</td>
+                    <!-- 
+                        <td>
+                            <button class="ui icon green mini button" data-clipboard-text="{{$server.Secret}}" data-tooltip="{{tr "ClickToCopy"}}">
+                                <i class="copy icon"></i>
+                            </button>
+                        </td>
+                    -->
                     <td>
                         <button class="ui icon green mini button"
                             data-clipboard-text="{{if $.Conf.GRPCHost}}{{if eq $.Conf.Language "zh-CN"}}curl -L https://raw.githubusercontent.com/railzen/nezhazero/main/script/naza.sh{{else}}curl -L https://raw.githubusercontent.com/railzen/nezhazero/main/script/install_en.sh{{end}} -o naza.sh && chmod +x naza.sh && ./naza.sh install_agent {{$.Conf.GRPCHost}} {{if $.Conf.ProxyGRPCPort}}{{$.Conf.ProxyGRPCPort}}{{else}}{{$.Conf.GRPCPort}}{{end}} {{$server.Secret}}{{if $.Conf.TLS}} --tls{{end}}{{else}}{{tr "NoDomainAlert"}}{{end}}"
@@ -85,7 +99,7 @@
                     </td>
                     <td>
                         {{if $server.PublicNote}}
-                            <button class="ui icon green mini button" title="{{$server.PublicNote}}" onclick="addOrEditServer({{$server.MarshalForDashboard}})"><i class="sticky clipboard icon"></i></button>
+                            <button class="ui icon green mini button" title="{{$server.PublicNote}}" onclick="addOrEditServer({{$server.MarshalForDashboard}})"><i class="sticky note icon"></i></button>
                         {{end}}
                     </td>
                     <td>
@@ -113,6 +127,7 @@
 <script src="/static/cdn/clipboard@2.0.11/dist/clipboard.min.js"></script>
 <script>
     var clipboard = new ClipboardJS('.ui.icon.green.mini.button');
+    var clipboardip = new ClipboardJS('.ui.icon.mini.button');
     const checkBoxList = document.querySelectorAll('tbody > tr > td > input.nezha-servers[type=checkbox]')
     function checkAllServer() {
         checkBoxList.forEach(cb => {
@@ -236,21 +251,22 @@
         showConfirm('{{tr "DeleteServer"}}', '{{tr "ConfirmToDeleteServer"}}', () => postJson('/api/batch-delete-server', servers), '')
     }
 </script>
+
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    // 找到所有按钮
-    document.querySelectorAll('[data-clipboard-text]').forEach(function(btn) {
+    // 只处理带 ip-copy 类的按钮
+    document.querySelectorAll('.ip-copy').forEach(function(btn) {
         let ip = btn.getAttribute('data-clipboard-text');
         if (!ip) return;
 
         // 匹配 IPv4 地址
         const match = ip.match(/\b\d{1,3}(?:\.\d{1,3}){3}\b/);
         if (match) {
-            // 把 data-clipboard-text 替换成纯 IPv4
             btn.setAttribute('data-clipboard-text', match[0]);
         }
     });
 });
 </script>
+
 
 {{end}}
