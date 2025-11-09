@@ -96,7 +96,7 @@ jobs:
         with:
           artifacts: |
             assets/*/*/*.zip
-            repos/agent/bin/*.zip
+          # repos/agent/bin/*.zip
           generateReleaseNotes: true
           prerelease: true
           
