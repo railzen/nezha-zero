@@ -28,49 +28,47 @@ if (Test-Path "C:\nezha\nezha-agent.exe") {
 #TLS/SSL
 Write-Host "Determining latest nezha release" -BackgroundColor DarkGreen -ForegroundColor White
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-$agenttag = (Invoke-WebRequest -Uri $agentreleases -UseBasicParsing | ConvertFrom-Json)[0].tag_name
-if ([string]::IsNullOrWhiteSpace($agenttag)) {
-    $optionUrl = "https://fastly.jsdelivr.net/gh/nezhahq/agent/"
-    Try {
-        $response = Invoke-WebRequest -Uri $optionUrl -UseBasicParsing -TimeoutSec 10
-        if ($response.StatusCode -eq 200) {
-            $versiontext = $response.Content | findstr /c:"option.value"
-            $version = [regex]::Match($versiontext, "@(\d+\.\d+\.\d+)").Groups[1].Value
-            $agenttag = "v" + $version
-        }
-    } Catch {
-        $optionUrl = "https://gcore.jsdelivr.net/gh/nezhahq/agent/"
-        $response = Invoke-WebRequest -Uri $optionUrl -UseBasicParsing -TimeoutSec 10
-        if ($response.StatusCode -eq 200) {
-            $versiontext = $response.Content | findstr /c:"option.value"
-            $version = [regex]::Match($versiontext, "@(\d+\.\d+\.\d+)").Groups[1].Value
-            $agenttag = "v" + $version
-        }
-    }
-}
+$agenttag = "v0.20.5"
+#$agenttag = (Invoke-WebRequest -Uri $agentreleases -UseBasicParsing | ConvertFrom-Json)[0].tag_name
+#if ([string]::IsNullOrWhiteSpace($agenttag)) {
+#    $optionUrl = "https://fastly.jsdelivr.net/gh/nezhahq/agent/"
+#    Try {
+#        $response = Invoke-WebRequest -Uri $optionUrl -UseBasicParsing -TimeoutSec 10
+#        if ($response.StatusCode -eq 200) {
+#            $versiontext = $response.Content | findstr /c:"option.value"
+#            $version = [regex]::Match($versiontext, "@(\d+\.\d+\.\d+)").Groups[1].Value
+#            $agenttag = "v" + $version
+#        }
+#    } Catch {
+#        $optionUrl = "https://gcore.jsdelivr.net/gh/nezhahq/agent/"
+#        $response = Invoke-WebRequest -Uri $optionUrl -UseBasicParsing -TimeoutSec 10
+#        if ($response.StatusCode -eq 200) {
+#            $versiontext = $response.Content | findstr /c:"option.value"
+#            $version = [regex]::Match($versiontext, "@(\d+\.\d+\.\d+)").Groups[1].Value
+#            $agenttag = "v" + $version
+#        }
+#    }
+#}
 #Region判断
-$ipapi = ""
+#$ipapi = ""
 $region = "Unknown"
-foreach ($url in ("https://dash.cloudflare.com/cdn-cgi/trace","https://developers.cloudflare.com/cdn-cgi/trace","https://1.0.0.1/cdn-cgi/trace")) {
-    try {
-        $ipapi = Invoke-RestMethod -Uri $url -TimeoutSec 5 -UseBasicParsing
-        if ($ipapi -match "loc=(\w+)" ) {
-            $region = $Matches[1]
-            break
-        }
-    }
-    catch {
-        Write-Host "Error occurred while querying $url : $_"
-    }
-}
-echo $ipapi
-if($region -ne "CN"){
+#foreach ($url in ("https://dash.cloudflare.com/cdn-cgi/trace","https://developers.cloudflare.com/cdn-cgi/trace","https://1.0.0.1/cdn-cgi/trace")) {
+#    try {
+#        $ipapi = Invoke-RestMethod -Uri $url -TimeoutSec 5 -UseBasicParsing
+#        if ($ipapi -match "loc=(\w+)" ) {
+#            $region = $Matches[1]
+#            break
+#        }
+#    }
+#    catch {
+#        Write-Host "Error occurred while querying $url : $_"
+#    }
+#}
+#echo $ipapi
+
 $download = "https://github.com/$agentrepo/releases/download/$agenttag/$file"
 Write-Host "Location:$region,connect directly!" -BackgroundColor DarkRed -ForegroundColor Green
-}else{
-$download = "https://gitee.com/naibahq/agent/releases/download/$agenttag/$file"
-Write-Host "Location:CN,use mirror address" -BackgroundColor DarkRed -ForegroundColor Green
-}
+
 echo $download
 Invoke-WebRequest $download -OutFile "C:\nezha.zip"
 #解压
