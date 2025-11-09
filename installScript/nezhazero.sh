@@ -4,7 +4,7 @@
 # v0 分支脚本强制重定向至新仓库
 #========================================================
 
-shell_url="https://raw.githubusercontent.com/railzen/nezhazero/main/script/naza.sh"
+shell_url="https://raw.githubusercontent.com/railzen/nezha-zero/main/script/naza.sh"
 
 if command -v wget >/dev/null 2>&1; then
     wget -O naza.sh "$shell_url"

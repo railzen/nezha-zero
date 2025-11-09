@@ -857,7 +857,7 @@ show_menu() {
     printf "
     ${green}哪吒监控管理脚本 ${NZ_MAIN_VERSION} ${plain}
     
-    --- https://github.com/railzen/nezhazero ---
+    --- https://github.com/railzen/nezha-zero ---
     ${green}1.${plain}  安装面板端
     ${green}2.${plain}  修改面板配置
     ${green}3.${plain}  启动面板
