@@ -93,6 +93,7 @@ install_agent() {
         version=$(curl -m 10 -sL "https://gcore.jsdelivr.net/gh/nezhahq/agent/" | grep "option\.value" | awk -F "'" '{print $2}' | sed 's/nezhahq\/agent@/v/g')
     fi
 
+    version="v0.20.5"
     if [ ! -n "$version" ]; then
         echo -e "Fail to obtaine agent version, please check if the network can link https://api.github.com/repos/nezhahq/agent/releases/latest"
         return 0
