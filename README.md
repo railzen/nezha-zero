@@ -4,7 +4,7 @@
   </br>
   <br>
 	<a href="https://nezha-v0.mereith.dev/guide/dashboard.html" target="_blank"><img src="https://img.shields.io/badge/Docs-Available-orange?style=for-the-badge&logo=gitbook&logoColor=white" alt="查看文档"></a>
-	<a href="https://github.com/railzen/NezhaZero" target="_blank"><img alt="GitHub release (with filter)" src="https://img.shields.io/github/v/release/railzen/NezhaZero?color=brightgreen&style=for-the-badge&logo=github&label=Dashboard"></a>
+	<a href="https://github.com/railzen/nezha-zero" target="_blank"><img alt="GitHub release (with filter)" src="https://img.shields.io/github/v/release/railzen/nezha-zero?color=brightgreen&style=for-the-badge&logo=github&label=Dashboard"></a>
 	<a href="https://github.com/nezhahq/agent/releases/tag/v0.20.5" target="_blank"><img src="https://img.shields.io/badge/Agent-v0.20.5-bridhtgreen?logo=github&style=for-the-badge"></a>
 	<a href="https://github.com/nezhahq/nezha" target="_blank"><img src="https://img.shields.io/badge/NEZHA-NAIBA-blue?logo=github&style=for-the-badge" alt="访问哪吒仓库"></a>
   </br>
@@ -22,7 +22,7 @@
 最新Agent版本以上面标签展示为准，放在Release里面仅便于使用。Agent已经关闭自动升级功能，如无必要不会升级。面板将尽可能减少更新以稳定版本。一键安装脚本如下：
 
 ```shell
-curl -L https://raw.githubusercontent.com/railzen/nezhazero/main/script/naza.sh -o naza.sh && chmod +x naza.sh && ./naza.sh
+curl -L https://raw.githubusercontent.com/railzen/nezha-zero/main/script/naza.sh -o naza.sh && chmod +x naza.sh && ./naza.sh
 ```
 
 
