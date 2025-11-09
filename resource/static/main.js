@@ -71,7 +71,10 @@ function postJson(url, data) {
 function showFormModal(modelSelector, formID, URL, getData) {
   $(modelSelector)
     .modal({
-      closable: true,
+      closable: true,       // 点击遮罩或关闭按钮可以关闭
+      autofocus: false,     // 避免自动聚焦触发关闭
+      detachable: false,    // 保持在原 DOM，避免父容器事件干扰
+      observeChanges: true, // 动态内容渲染安全
       onApprove: function () {
         let success = false;
         const btn = $(modelSelector + " .nezha-primary-btn.button");
