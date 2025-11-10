@@ -55,7 +55,7 @@
                     <span v-else-if="node.additional.remaining.days < 0">{{tr "Expired"}}</span>
                     <span v-else class="node-cell-remaining-days" :style="{
                         color: node.additional.remaining.days < 5 ? '#ee1c25' : (node.additional.remaining.days < 10 && node.additional.remaining.days >= 5 ? '#fed12c' : '') }">
-                        @#node.additional.remaining.days#@{{tr "Days"}}</span>
+                        @#node.additional.remaining.days#@ {{tr "Days"}}</span>
                 </template>
             </td>
             <td style="text-align: center;" class="node-cell load">@#node.load#@</td>
