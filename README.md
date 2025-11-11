@@ -29,6 +29,11 @@ curl -L https://raw.githubusercontent.com/railzen/nezha-zero/main/script/naza.sh
 
 ## Screenshots
 
+
+#### **Dashboard**
+
+![image_2](.\agent\web\image_2.png)
+
 | Default Theme                                                                                 | DayNight [@JackieSung](https://github.com/JackieSung4ev)                                               | hotaru                                                                     |
 | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
 | ![Default Theme](resource/template/theme-default/screenshot.png)                              | <img src="resource/template/theme-daynight/screenshot.png" width="3000px"/>                            | <img src="resource/template/theme-hotaru/screenshot.png" width="1500px" /> |
