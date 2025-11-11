@@ -32,7 +32,7 @@ curl -L https://raw.githubusercontent.com/railzen/nezha-zero/main/script/naza.sh
 
 #### **Dashboard**
 
-![image_2](.\agent\web\image_2.png)
+![image_2](agent/web/image_2.png)
 
 | Default Theme                                                                                 | DayNight [@JackieSung](https://github.com/JackieSung4ev)                                               | hotaru                                                                     |
 | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
