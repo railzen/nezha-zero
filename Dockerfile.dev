@@ -41,7 +41,7 @@ RUN if [ "$COUNTRY" = "CN" ] ; then \
 
 
 # Copy the entrypoint script and ensure it is executable
-COPY ./script/entrypoint.sh /entrypoint.sh
+COPY ./script/extras/entrypoint.sh /entrypoint.sh
 
 # Set up the entrypoint script
 RUN chmod +x /entrypoint.sh 
@@ -51,7 +51,7 @@ WORKDIR /dashboard
 # Copy the statically linked binary from the builder stage
 COPY --from=builder /app/dashboard ./app
 # Copy the configuration file and the resource directory
-COPY ./script/config.yaml ./data/config.yaml
+COPY ./script/extras/config.yaml ./data/config.yaml
 COPY ./resource ./resource
 
 
