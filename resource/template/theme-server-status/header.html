@@ -17,6 +17,18 @@
     {{end}}
     <link rel="apple-touch-startup-image" href="/static/logo.svg" />
     <link rel="shortcut icon" type="image/png" href="/static/logo.svg">
+    
+    <!-- Performance: Preload critical resources -->
+    <link rel="preload" href="/static/cdn/semantic-ui@2.4.0/dist/themes/default/assets/fonts/icons.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/static/cdn/bootstrap-icons@1.11.3/font/fonts/bootstrap-icons.woff2?dd67030699838ea613ee6dbda90effa6" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/static/cdn/font-logos@0.17.0/assets/font-logos.woff2" as="font" type="font/woff2" crossorigin>
+    
+    <link rel="preload" href="/static/cdn/bootstrap@3.4.1/dist/css/bootstrap.min.css" as="style">
+    <link rel="preload" href="/static/cdn/semantic-ui@2.4.0/dist/semantic.min.css" as="style">
+    <link rel="preload" href="/static/cdn/jquery@3.7.1/dist/jquery.min.js" as="script">
+    <link rel="preload" href="/static/cdn/vue@2.6.14/dist/vue.min.js" as="script">
+    <link rel="preload" href="/static/cdn/echarts@5.5.0/dist/echarts.min.js" as="script">
+    
     <link rel="stylesheet" href="/static/cdn/bootstrap@3.4.1/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="/static/cdn/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="/static/cdn/font-logos@0.17.0/assets/font-logos.css">
