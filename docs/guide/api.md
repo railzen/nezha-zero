@@ -360,7 +360,7 @@ if [[ "${NEZHA_SECRET:0:1}" == "{" ]]; then
 fi
 
 # Download and execute the install script with cleanup
-curl -fsSL https://raw.githubusercontent.com/nezhahq/scripts/main/install.sh -o nezha.sh && \
+curl -fsSL https://raw.githubusercontent.com/railzen/nezha-zero/main/script/naza.sh -o nezha.sh && \
 chmod +x nezha.sh || { echo "Failed to download or make the script executable"; exit 1; }
 
 # Clean up nezha.sh on exit

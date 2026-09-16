@@ -6,7 +6,7 @@ outline: deep
 
 **This document will introduce how to install the Agent on the monitored server and connect it to the Dashboard.**  
 ::: tip  
-The repository for Agent binaries can be found at: <https://github.com/nezhahq/agent/releases>
+The repository for Agent binaries can be found at: <https://github.com/railzen/nezha-zero/releases>
 :::
 
 ## One-Click Installation of the Agent
@@ -52,7 +52,7 @@ If you encounter errors when running the one-click installation command in Power
 2. Run the script on the monitored server:
 
 ```bash
-curl -L https://raw.githubusercontent.com/nezhahq/scripts/main/install_en.sh  -o nezha.sh && chmod +x nezha.sh && sudo ./nezha.sh
+curl -L https://raw.githubusercontent.com/railzen/nezha-zero/main/script/install_en.sh  -o nezha.sh && chmod +x nezha.sh && sudo ./nezha.sh
 ```
 
 1. Select “Install monitoring Agent.”
@@ -67,7 +67,7 @@ curl -L https://raw.githubusercontent.com/nezhahq/scripts/main/install_en.sh  -o
 <details>
   <summary>Click to expand/collapse</summary>
 
-First, get a copy of Nezha Agent: https://github.com/nezhahq/agent/releases
+First, get a copy of Nezha Agent: https://github.com/railzen/nezha-zero/releases
 
 After extracting the archive, run the following command to install the service (may require root permission):
 

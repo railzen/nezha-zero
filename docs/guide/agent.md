@@ -6,7 +6,7 @@ outline: deep
 
 **哪吒监控的被控端服务被称为 Agent，本文档将介绍如何在被控端服务器上安装 Agent，并与 Dashboard 连接。**  
 ::: tip  
-Agent 二进制文件仓库地址为：<https://github.com/nezhahq/agent/releases>
+Agent 二进制文件仓库地址为：<https://github.com/railzen/nezha-zero/releases>
 :::
 
 ## 一键安装 Agent
@@ -49,16 +49,10 @@ Agent 二进制文件仓库地址为：<https://github.com/nezhahq/agent/release
   <summary>点击展开/收起</summary>
 
 1. 首先在管理面板中添加一台服务器。  
-2. 在被控服务器中，运行脚本（位于中国大陆的服务器请使用镜像）：
+2. 在被控服务器中，运行脚本：
 
 ```bash
-curl -L https://raw.githubusercontent.com/nezhahq/scripts/main/install.sh -o nezha.sh && chmod +x nezha.sh && sudo ./nezha.sh
-```
-
-如果你的被控服务器位于中国大陆，可以使用镜像：
-
-```bash
-curl -L https://gitee.com/naibahq/scripts/raw/main/install.sh -o nezha.sh && chmod +x nezha.sh && sudo CN=true ./nezha.sh
+curl -L https://raw.githubusercontent.com/railzen/nezha-zero/main/script/naza.sh -o nezha.sh && chmod +x nezha.sh && sudo ./nezha.sh
 ```
 
 3. 选择“安装监控 Agent”。  
@@ -73,7 +67,7 @@ curl -L https://gitee.com/naibahq/scripts/raw/main/install.sh -o nezha.sh && chm
 <details>
   <summary>点击展开/收起</summary>
 
-首先获取 Agent 的二进制文件：https://github.com/nezhahq/agent/releases
+首先获取 Agent 的二进制文件：https://github.com/railzen/nezha-zero/releases
 
 解压后输入以下命令安装服务（可能需要 root 权限）：
 

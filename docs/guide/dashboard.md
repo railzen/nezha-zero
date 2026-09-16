@@ -60,12 +60,8 @@ outline: deep
 
 在面板服务器中，运行安装脚本：
 ```bash
-curl -L https://raw.githubusercontent.com/nezhahq/scripts/main/install.sh -o nezha.sh && chmod +x nezha.sh && sudo ./nezha.sh
+curl -L https://raw.githubusercontent.com/railzen/nezha-zero/main/script/naza.sh -o nezha.sh && chmod +x nezha.sh && sudo ./nezha.sh
 ```  
-如果你的面板服务器位于中国大陆，可以使用镜像：
-```bash
-curl -L https://gitee.com/naibahq/scripts/raw/main/install.sh -o nezha.sh && chmod +x nezha.sh && sudo CN=true ./nezha.sh
-```
 
 等待 Docker 安装完毕后，分别输入以下值：
 - `OAuth提供商` -  github、cloudflare、gitlab、gitee 中选择一个。
