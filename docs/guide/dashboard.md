@@ -14,7 +14,11 @@ outline: deep
 
 本文档分别以 "dashboard.example.com" 和 "data.example.com" 两个域名来演示。
 :::
-3. 一个 Github 账号（或：Gitlab、Gitee）。
+3. 仅在使用 OAuth 登录时，需要一个 Github 账号（或：Gitlab、Gitee）；只使用用户名和密码登录则不需要。
+
+::: tip 只使用密码登录
+本项目支持不配置 OAuth，仅使用管理员用户名和密码登录。无需创建 OAuth 应用，也无需填写 Client ID、Client Secret 或回调地址，可以跳过下方 OAuth/OIDC 配置，直接前往[在服务器中安装 Dashboard](#在服务器中安装-dashboard)，按[仅配置密码登录](#password-only)的步骤操作。
+:::
 
 **本文档将以宝塔面板反代 Dashboard 的过程作为示范，随着未来版本的变化，部分功能的入口可能会发生改变，本文档仅供参考。**  
 :::warning  
@@ -24,7 +28,7 @@ outline: deep
 
 ## 获取 Github 的 Client ID 和密钥
 
-哪吒监控接入 Github、Gitlab、Gitee 作为后台管理员账号。  
+本节仅适用于使用 OAuth 登录的用户。哪吒监控可接入 Github、Gitlab、Gitee 作为后台管理员账号。
 1. 首先我们需要新建一个验证应用，以 Github 为例，登录 Github 后，打开 https://github.com/settings/developers ，依次选择“OAuth Apps” - “New OAuth App”。  
 `Application name` - 随意填写。  
 `Homepage URL` - 填写面板的访问域名，如："http://dashboard.example.com"（你的域名）。  
@@ -63,11 +67,29 @@ outline: deep
 curl -L https://raw.githubusercontent.com/railzen/nezha-zero/main/script/naza.sh -o nezha.sh && chmod +x nezha.sh && sudo ./nezha.sh
 ```  
 
-等待 Docker 安装完毕后，分别输入以下值：
-- `OAuth提供商` -  github、cloudflare、gitlab、gitee 中选择一个。
-- `Client ID` - 之前保存的 Client ID。
-- `Client Secret` - 之前保存的 Client Secret。
-- `用户名` - OAuth 提供商中的用户名/User ID。
+选择“安装面板端”，按脚本提示完成运行环境安装后，选择登录方式。
+
+### 仅配置密码登录 {#password-only}
+
+1. 在 `是否配置 OAuth 登录？[Y/n]:` 提示处输入 `n` 并回车。直接回车默认配置 OAuth，因此这里必须明确输入 `n`。
+2. 输入管理员用户名，例如 `admin`，不能为空。此用户名由你自定义，无需对应 GitHub 等平台的账号；多个用户名以逗号分隔。
+3. 输入面板密码；留空直接回车时，脚本会生成一个 16 位随机密码。跳过 OAuth 后，脚本会自动配置密码登录，不再询问是否启用密码登录。
+4. 按下方说明填写站点标题和端口。配置保存后，终端会显示管理员用户名和密码，请保存这些信息；其中 `OAuth 登录: 未配置` 是此安装方式的正常结果。
+5. 安装完成后，打开面板的登录页面，使用刚才设置的管理员用户名和密码登录，无需第三方账号授权。
+
+### 配置 OAuth 登录（可选）
+
+在 `是否配置 OAuth 登录？[Y/n]:` 提示处输入 `y` 或直接回车，然后按提示填写：
+
+- `OAuth2 提供商` - 按脚本提示选择，默认为 `github`。
+- `Client ID` 和 `Client Secret` - 之前创建的 OAuth 应用信息。
+- `管理员用户名` - OAuth 提供商中的用户名/User ID，多个以逗号分隔。
+- `是否配置密码登录？[Y/n]:` - 直接回车或输入 `y` 可同时配置密码登录，随后设置面板密码（留空随机生成）；输入 `n` 则仅配置 OAuth 登录。
+
+### 填写站点信息并完成安装
+
+两种登录方式都需要继续填写以下信息：
+
 - `站点标题` - 自定义站点标题。
 - `访问端口` - 公开访问端口，可自定义，默认 8008。
 - `Agent的通信端口` - Agent 与 Dashboard 的通信端口，默认 5555。
@@ -130,7 +152,7 @@ proxy /file/* http://ip:8008 {
 
 首先，先暂时关闭反向代理。  
 正如在其他网站中配置 SSL 证书一样，进入站点设置中的 “SSL”，你可以选择自动申请 Let´s Encrypt 证书或手动配置已有的证书。  
-完成 SSL 的设置后，你需要回到 https://github.com/settings/developers ，编辑之前创建的验证应用程序，将之前我们填入的 "Homepage URL" 和 "Authorization callback URL" 中的域名全部从 `http` 改为 `https`，如："https://dashboard.example.com" 和 "https://dashboard.example.com/oauth2/callback" ，**不更改此项可能会导致你无法登录面板后台**。  
+如果使用 GitHub OAuth 登录，完成 SSL 设置后，需要回到 https://github.com/settings/developers ，编辑之前创建的验证应用程序，将 "Homepage URL" 和 "Authorization callback URL" 从 `http` 改为 `https`，如："https://dashboard.example.com" 和 "https://dashboard.example.com/oauth2/callback"，**不更改此项可能会导致 OAuth 登录失败**。仅使用密码登录时，无需配置 OAuth 回调地址。
 
 ## 更新 Dashboard
 

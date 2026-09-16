@@ -11,10 +11,10 @@ hero:
   actions:
     - theme: brand
       text: 预览
-      link: https://ops.naibahq.com
+      link: https://status.oauz.com
     - theme: alt
       text: 开始使用 →
-      link: /guide/dashboard
+      link: /guide/quick-start
 
 features:
   - title: 一键安装

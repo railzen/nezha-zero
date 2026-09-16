@@ -14,7 +14,11 @@ If you want to use a CDN, prepare two domains: one configured with CDN for publi
 
 This document uses "dashboard.example.com" and "data.example.com" as example domains.
 :::
-3. A Github account (or Gitlab, Gitee).
+3. A Github account (or Gitlab, Gitee) only if you use OAuth login. No third-party account is required for username and password login.
+
+::: tip Password-only login
+This project supports administrator username and password login without OAuth. You do not need to create an OAuth application or provide a Client ID, Client Secret, or callback URL. Skip the OAuth/OIDC configuration below and go directly to [Installing the Dashboard on the Server](#installing-the-dashboard-on-the-server), then follow [Password-only login](#password-only).
+:::
 
 **This document uses the aaPanel for reverse proxying the Dashboard as an example. As future versions change, some features may change their entry points. This document is for reference only.**  
 ::: warning  
@@ -24,7 +28,7 @@ If you do not need to use ports 80 and 443 to access the Dashboard, you can dire
 
 ## Obtaining Github Client ID and Secret
 
-Nezha Monitoring uses Github, Gitlab, or Gitee as admin accounts.  
+This section is only required for OAuth login. Nezha Monitoring can use Github, Gitlab, or Gitee as admin accounts.
 1. First, create an OAuth application. For Github, log in to Github, open [Github OAuth Apps](https://github.com/settings/developers), and select "OAuth Apps" -> "New OAuth App".  
 `Application name` - Fill in as you like.  
 `Homepage URL` - Fill in with the domain for accessing the dashboard, such as "http://dashboard.example.com" (your domain).  
@@ -63,11 +67,29 @@ Run the installation script on the dashboard server:
 curl -L https://raw.githubusercontent.com/railzen/nezha-zero/main/script/install_en.sh  -o nezha.sh && chmod +x nezha.sh && sudo ./nezha.sh
 ```  
 
-After Docker installation completes, enter the following values:
-- `OAuth provider` - choose one from github, cloudflare, gitlab, gitee.
-- `Client ID` - the previously saved Client ID.
-- `Client Secret` - the previously saved Client Secret.
-- `Username` - the username/User ID from the OAuth provider.
+Select the dashboard installation option and follow the script's environment setup prompts, then choose your login method.
+
+### Password-only login {#password-only}
+
+1. At `Configure OAuth login? [Y/n]:`, enter `n` and press Enter. Pressing Enter alone enables OAuth by default, so explicitly enter `n` here.
+2. Enter an administrator username, such as `admin`. It cannot be empty and does not need to match an account on GitHub or another provider. Separate multiple usernames with commas.
+3. Enter your panel password, or press Enter without a value to generate a random 16-character password. When OAuth is skipped, the script automatically configures password login without asking whether to enable it.
+4. Enter the site title and ports as described below. After saving the configuration, the script displays the administrator username and password; save these credentials. `OAuth login: not configured` is expected for this installation method.
+5. Once installation completes, open the dashboard's login page and sign in with the administrator username and password you configured. No third-party authorization is required.
+
+### OAuth login (optional)
+
+At `Configure OAuth login? [Y/n]:`, enter `y` or press Enter, then provide:
+
+- `OAuth2 provider` - follow the script's choices; the default is `github`.
+- `Client ID` and `Client Secret` - the credentials from your OAuth application.
+- `Administrator username` - the username/User ID from the OAuth provider; separate multiple usernames with commas.
+- `Configure password login? [Y/n]:` - press Enter or enter `y` to also configure password login, then set a panel password (leave it empty to generate one). Enter `n` to configure OAuth login only.
+
+### Site settings and installation completion
+
+Both login methods require the following site settings:
+
 - `Site title` - custom site title.
 - `Access port` - public access port, customizable, default is 8008.
 - `Agent communication port` - port for Agent and Dashboard communication, default is 5555.
@@ -130,7 +152,7 @@ proxy /file/* http://ip:8008 {
 
 First, temporarily disable the reverse proxy.  
 Like configuring SSL certificates for other websites, enter the “SSL” in the site settings, and you can choose to automatically apply for a Let’s Encrypt certificate or manually configure an existing certificate.  
-After completing the SSL settings, go back to [Github OAuth Apps](https://github.com/settings/developers) and edit the previously created OAuth application. Change all the domain parts in "Homepage URL" and "Authorization callback URL" from `http` to `https`, such as "https://dashboard.example.com" and "https://dashboard.example.com/oauth2/callback". **Failing to change this may result in being unable to log in to the admin panel.**
+If you use GitHub OAuth login, after completing the SSL settings, go back to [Github OAuth Apps](https://github.com/settings/developers) and edit the previously created OAuth application. Change "Homepage URL" and "Authorization callback URL" from `http` to `https`, such as "https://dashboard.example.com" and "https://dashboard.example.com/oauth2/callback". **Failing to change this may prevent OAuth login.** Password-only login does not require an OAuth callback URL.
 
 ## Updating the Dashboard
 

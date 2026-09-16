@@ -163,6 +163,7 @@ function getGuideSidebarZhCN() {
     {
       text: '安装手册',
       items: [
+        { text: '快速开始', link: '/guide/quick-start.html' },
         { text: '安装 Dashboard', link: '/guide/dashboard.html' },
         { text: '安装 Agent', link: '/guide/agent.html' }
       ]
@@ -241,6 +242,7 @@ function getGuideSidebarEnUS() {
     {
       text: 'Installation Manual',
       items: [
+        { text: 'Quick Start', link: '/en_US/guide/quick-start.html' },
         { text: 'Install Dashboard', link: '/en_US/guide/dashboard.html' },
         { text: 'Install Agent', link: '/en_US/guide/agent.html' }
       ]

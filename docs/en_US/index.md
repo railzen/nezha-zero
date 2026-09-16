@@ -12,10 +12,10 @@ hero:
   actions:
     - theme: brand
       text: Preview
-      link: https://ops.naibahq.com
+      link: https://status.oauz.com
     - theme: alt
       text: Get Started →
-      link: en_US/guide/dashboard
+      link: /en_US/guide/quick-start
 
 features:
   - title: One-Click Installation
