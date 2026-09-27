@@ -1,2 +1,0 @@
-import { css } from 'lit';
-export const layoutStyle = css `:host{position:relative;display:flex;flex:1 1 auto;overflow:hidden}:host([full-height]:not([full-height=false i])){height:100%}`;
