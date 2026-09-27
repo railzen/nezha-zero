@@ -270,6 +270,7 @@
                         <label>{{tr "EnableSubscriptionManagement"}}</label>
                     </div>
                 </div>
+                <div id="subscriptionRelatedSettings">
                 <div class="field">
                     <div class="ui checkbox enable-currency-conversion">
                         <input name="EnableCurrencyConversion" type="checkbox" tabindex="0" class="hidden">
@@ -317,6 +318,7 @@
                         </div>
                         <button class="ui button" id="currencyRefreshBtn" type="button">{{tr "RefreshExchangeRates"}}</button>
                     </div>
+                </div>
                 </div>
             </div>
             <div class="field">
@@ -604,6 +606,13 @@
     }
     $('.checkbox.disable-password-login').checkbox({
         onChange: togglePasswordLoginSettings
+    });
+    function toggleSubscriptionSettings() {
+        const enabled = $('.checkbox.enable-subscription').checkbox('is checked');
+        $('#subscriptionRelatedSettings').toggle(enabled);
+    }
+    $('.checkbox.enable-subscription').checkbox({
+        onChange: toggleSubscriptionSettings
     });
 
     const twoFactorModal = $('#twoFactorModal');
@@ -897,6 +906,7 @@
         position: 'top left',
         delay: {show: 120, hide: 300}
     });
+    toggleSubscriptionSettings();
     $('#currencyRefreshBtn').on('click', function () {
         const $btn = $(this);
         $btn.addClass('loading disabled');
