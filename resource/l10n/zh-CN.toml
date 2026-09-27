@@ -511,6 +511,9 @@ other = "未接入CDN的面板服务器域名/IP"
 [IPChangeAlert]
 other = "IP 变动通知"
 
+[EnableIPChangeNotification]
+other = "启用IP变动通知"
+
 [AllIncludedOnlySpecificServersAreNotAlerted]
 other = "覆盖所有，仅特定服务器不提醒"
 

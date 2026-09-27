@@ -511,6 +511,9 @@ other = "Dashboard Server Domain/IP without CDN"
 [IPChangeAlert]
 other = "IP Change Notification"
 
+[EnableIPChangeNotification]
+other = "Enable IP change notification"
+
 [AllIncludedOnlySpecificServersAreNotAlerted]
 other = "Cover All, Only ignore Specific Servers"
 

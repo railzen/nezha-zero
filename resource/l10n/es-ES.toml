@@ -511,6 +511,9 @@ other = "Dominio/IP del Servidor del Panel sin CDN"
 [IPChangeAlert]
 other = "Notificación de Cambio de IP"
 
+[EnableIPChangeNotification]
+other = "Activar notificación de cambio de IP"
+
 [AllIncludedOnlySpecificServersAreNotAlerted]
 other = "Incluir Todo, Excepto Servidores Específicos"
 

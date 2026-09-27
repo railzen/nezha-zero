@@ -326,6 +326,13 @@
             </div>
             <div class="ui segment">
                 <div class="field">
+                    <div class="ui checkbox ip-change">
+                        <input name="EnableIPChangeNotification" type="checkbox" tabindex="0" class="hidden">
+                        <label>{{tr "EnableIPChangeNotification"}}</label>
+                    </div>
+                </div>
+                <div id="ipChangeRelatedSettings">
+                <div class="field">
                     <label>{{tr "Coverage"}}</label>
                     <select name="Cover" class="ui fluid dropdown">
                         <option value=0>{{tr "AllIncludedOnlySpecificServersAreNotAlerted"}}</option>
@@ -341,11 +348,6 @@
                     <label>{{tr "IPChangeNotificationTag"}}</label>
                     <input type="text" name="IPChangeNotificationTag" placeholder="" value="{{.Conf.IPChangeNotificationTag}}">
                 </div>
-                <div class="field">
-                    <div class="ui checkbox ip-change">
-                        <input name="EnableIPChangeNotification" type="checkbox" tabindex="0" class="hidden">
-                        <label>{{tr "Enable"}}</label>
-                    </div>
                 </div>
             </div>
             <div class="field">
@@ -613,6 +615,13 @@
     }
     $('.checkbox.enable-subscription').checkbox({
         onChange: toggleSubscriptionSettings
+    });
+    function toggleIPChangeSettings() {
+        const enabled = $('.checkbox.ip-change').checkbox('is checked');
+        $('#ipChangeRelatedSettings').toggle(enabled);
+    }
+    $('.checkbox.ip-change').checkbox({
+        onChange: toggleIPChangeSettings
     });
 
     const twoFactorModal = $('#twoFactorModal');
@@ -907,6 +916,7 @@
         delay: {show: 120, hide: 300}
     });
     toggleSubscriptionSettings();
+    toggleIPChangeSettings();
     $('#currencyRefreshBtn').on('click', function () {
         const $btn = $(this);
         $btn.addClass('loading disabled');
