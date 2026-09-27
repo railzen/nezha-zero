@@ -80,6 +80,14 @@
         border-bottom-color: rgba(255, 255, 255, 0.18) !important;
     }
 
+    .ui.form .ui.segment.is-collapsed > .field {
+        margin-bottom: 0;
+    }
+
+    .collapsible-settings.is-hidden {
+        display: none !important;
+    }
+
     #passwordLoginSettings .admin-password-prompt {
         display: none;
         margin-top: 0.45rem;
@@ -270,7 +278,7 @@
                         <label>{{tr "EnableSubscriptionManagement"}}</label>
                     </div>
                 </div>
-                <div id="subscriptionRelatedSettings">
+                <div id="subscriptionRelatedSettings" class="collapsible-settings">
                 <div class="field">
                     <div class="ui checkbox enable-currency-conversion">
                         <input name="EnableCurrencyConversion" type="checkbox" tabindex="0" class="hidden">
@@ -331,7 +339,7 @@
                         <label>{{tr "EnableIPChangeNotification"}}</label>
                     </div>
                 </div>
-                <div id="ipChangeRelatedSettings">
+                <div id="ipChangeRelatedSettings" class="collapsible-settings">
                 <div class="field">
                     <label>{{tr "Coverage"}}</label>
                     <select name="Cover" class="ui fluid dropdown">
@@ -611,14 +619,16 @@
     });
     function toggleSubscriptionSettings() {
         const enabled = $('.checkbox.enable-subscription').checkbox('is checked');
-        $('#subscriptionRelatedSettings').toggle(enabled);
+        $('#subscriptionRelatedSettings').toggleClass('is-hidden', !enabled)
+            .closest('.ui.segment').toggleClass('is-collapsed', !enabled);
     }
     $('.checkbox.enable-subscription').checkbox({
         onChange: toggleSubscriptionSettings
     });
     function toggleIPChangeSettings() {
         const enabled = $('.checkbox.ip-change').checkbox('is checked');
-        $('#ipChangeRelatedSettings').toggle(enabled);
+        $('#ipChangeRelatedSettings').toggleClass('is-hidden', !enabled)
+            .closest('.ui.segment').toggleClass('is-collapsed', !enabled);
     }
     $('.checkbox.ip-change').checkbox({
         onChange: toggleIPChangeSettings
