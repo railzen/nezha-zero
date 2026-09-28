@@ -217,61 +217,63 @@ func (mp *memberPage) subscription(c *gin.Context) {
 		return singleton.Localizer.MustLocalize(&i18n.LocalizeConfig{MessageID: messageID})
 	}
 	rows := make([]subscriptionView, 0)
-	singleton.SortedServerLock.RLock()
-	for _, server := range singleton.SortedServerList {
-		item := model.ParseServerSubscription(server, now)
-		lifetime := item.Lifetime || model.IsLifetimeSubscriptionCycle(item.PriceUnit)
-		costCycle := item.PriceUnit
-		if lifetime {
-			costCycle = "永续"
+	if singleton.Conf.SyncServerSubscription {
+		singleton.SortedServerLock.RLock()
+		for _, server := range singleton.SortedServerList {
+			item := model.ParseServerSubscription(server, now)
+			lifetime := item.Lifetime || model.IsLifetimeSubscriptionCycle(item.PriceUnit)
+			costCycle := item.PriceUnit
+			if lifetime {
+				costCycle = "永续"
+			}
+			monthlyCost, yearlyCost, costCurrency, hasCost, costReason := recurringCost(item.Price, costCycle, item.Currency)
+			remainingDays := 0
+			hasEndDate := false
+			if !lifetime {
+				remainingDays = model.SubscriptionRemainingDays(now, item.EndDate)
+				hasEndDate = !item.EndDate.IsZero()
+			}
+			if hasEndDate && remainingDays < 0 {
+				costReason = ""
+			}
+			displayAmount, originalAmount, displayUnit := convertPrice(item.Price, costCycle, item.Currency)
+			if displayAmount == "" {
+				// 无法解析价格时按原文本展示
+				displayAmount = item.Price
+				displayUnit = item.Currency
+				originalAmount = ""
+			}
+			rows = append(rows, subscriptionView{
+				ID:             item.ServerID,
+				Server:         true,
+				Name:           item.Name,
+				StartDate:      subscriptionDate(item.StartDate),
+				EndDate:        subscriptionDate(item.EndDate),
+				RemainingDays:  remainingDays,
+				HasEndDate:     hasEndDate,
+				Lifetime:       lifetime,
+				Price:          item.Price,
+				Currency:       item.Currency,
+				DisplayAmount:  displayAmount,
+				DisplayUnit:    displayUnit,
+				OriginalAmount: originalAmount,
+				OriginalUnit:   item.Currency,
+				PriceUnit:      subscriptionFormCycle(item.PriceUnit, lifetime),
+				PriceUnitLabel: formatPriceUnit(item.PriceUnit, lifetime),
+				MonthlyCost:    monthlyCost,
+				YearlyCost:     yearlyCost,
+				CostCurrency:   costCurrency,
+				HasCost:        hasCost,
+				CostReason:     costReason,
+				Link:           normalizeSubscriptionLink(server.Link),
+				Note:           server.Note,
+				Group:          item.Group,
+				AutoRenewal:    item.AutoRenewal,
+				Enabled:        true,
+			})
 		}
-		monthlyCost, yearlyCost, costCurrency, hasCost, costReason := recurringCost(item.Price, costCycle, item.Currency)
-		remainingDays := 0
-		hasEndDate := false
-		if !lifetime {
-			remainingDays = model.SubscriptionRemainingDays(now, item.EndDate)
-			hasEndDate = !item.EndDate.IsZero()
-		}
-		if hasEndDate && remainingDays < 0 {
-			costReason = ""
-		}
-		displayAmount, originalAmount, displayUnit := convertPrice(item.Price, costCycle, item.Currency)
-		if displayAmount == "" {
-			// 无法解析价格时按原文本展示
-			displayAmount = item.Price
-			displayUnit = item.Currency
-			originalAmount = ""
-		}
-		rows = append(rows, subscriptionView{
-			ID:             item.ServerID,
-			Server:         true,
-			Name:           item.Name,
-			StartDate:      subscriptionDate(item.StartDate),
-			EndDate:        subscriptionDate(item.EndDate),
-			RemainingDays:  remainingDays,
-			HasEndDate:     hasEndDate,
-			Lifetime:       lifetime,
-			Price:          item.Price,
-			Currency:       item.Currency,
-			DisplayAmount:  displayAmount,
-			DisplayUnit:    displayUnit,
-			OriginalAmount: originalAmount,
-			OriginalUnit:   item.Currency,
-			PriceUnit:      subscriptionFormCycle(item.PriceUnit, lifetime),
-			PriceUnitLabel: formatPriceUnit(item.PriceUnit, lifetime),
-			MonthlyCost:    monthlyCost,
-			YearlyCost:     yearlyCost,
-			CostCurrency:   costCurrency,
-			HasCost:        hasCost,
-			CostReason:     costReason,
-			Link:           normalizeSubscriptionLink(server.Link),
-			Note:           server.Note,
-			Group:          item.Group,
-			AutoRenewal:    item.AutoRenewal,
-			Enabled:        true,
-		})
+		singleton.SortedServerLock.RUnlock()
 	}
-	singleton.SortedServerLock.RUnlock()
 
 	var subscriptions []model.Subscription
 	singleton.DB.Order("id").Find(&subscriptions)

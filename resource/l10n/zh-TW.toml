@@ -1209,6 +1209,9 @@ other = "訂閱管理"
 [EnableSubscriptionManagement]
 other = "啟用訂閱管理"
 
+[ShowServerBilling]
+other = "顯示伺服器帳單"
+
 [AddSubscription]
 other = "新增訂閱"
 

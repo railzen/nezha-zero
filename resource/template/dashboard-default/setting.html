@@ -280,6 +280,12 @@
                 </div>
                 <div id="subscriptionRelatedSettings" class="collapsible-settings">
                 <div class="field">
+                    <div class="ui checkbox show-server-billing">
+                        <input name="SyncServerSubscription" type="checkbox" tabindex="0" class="hidden">
+                        <label>{{tr "ShowServerBilling"}}</label>
+                    </div>
+                </div>
+                <div class="field">
                     <div class="ui checkbox enable-currency-conversion">
                         <input name="EnableCurrencyConversion" type="checkbox" tabindex="0" class="hidden">
                         <label>{{tr "EnableCurrencyConversion"}}</label>
@@ -899,6 +905,9 @@
     {{ end }}
     {{ if .Conf.EnableSubscription }}
     $('.checkbox.enable-subscription').checkbox('set checked')
+    {{ end }}
+    {{ if .Conf.SyncServerSubscription }}
+    $('.checkbox.show-server-billing').checkbox('set checked')
     {{ end }}
     {{ if .Conf.EnableCurrencyConversion }}
     $('.checkbox.enable-currency-conversion').checkbox('set checked')

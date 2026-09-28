@@ -410,6 +410,10 @@ func (ma *memberAPI) addOrEditSubscription(c *gin.Context) {
 		return
 	}
 	if form.Server {
+		if !singleton.Conf.SyncServerSubscription {
+			c.JSON(http.StatusOK, model.Response{Code: http.StatusBadRequest, Message: "未启用显示服务器账单"})
+			return
+		}
 		ma.updateServerSubscriptionLink(c, form)
 		return
 	}
@@ -1511,6 +1515,7 @@ type settingForm struct {
 	CompatAPIDisable                string
 	UseTemplateHandleNoRoute        string
 	EnableSubscription              string
+	SyncServerSubscription          string
 	EnableCurrencyConversion        string
 	ShowMonthlyPrice                string
 	CurrencyProvider                string
@@ -1704,6 +1709,7 @@ func (ma *memberAPI) updateSetting(c *gin.Context) {
 	singleton.Conf.UseTemplateHandleNoRoute = sf.UseTemplateHandleNoRoute == "on"
 	singleton.Conf.CompatAPIDisable = sf.CompatAPIDisable == "on"
 	singleton.Conf.EnableSubscription = sf.EnableSubscription == "on"
+	singleton.Conf.SyncServerSubscription = sf.SyncServerSubscription == "on"
 	singleton.Conf.EnableCurrencyConversion = enableCurrencyConversion
 	singleton.Conf.ShowMonthlyPrice = sf.ShowMonthlyPrice == "on"
 	singleton.Conf.CurrencyProvider = currencyProvider
@@ -1790,6 +1796,7 @@ func (ma *memberAPI) updateSetting(c *gin.Context) {
 		DisableSwitchTemplateInFrontend: sf.DisableSwitchTemplateInFrontend == "on",
 		CompatAPIDisable:                sf.CompatAPIDisable == "on",
 		EnableSubscription:              sf.EnableSubscription == "on",
+		SyncServerSubscription:          sf.SyncServerSubscription == "on",
 		EnableCurrencyConversion:        enableCurrencyConversion,
 		CurrencyProvider:                currencyProvider,
 		BaseCurrency:                    baseCurrency,

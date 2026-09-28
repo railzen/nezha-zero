@@ -1210,6 +1210,9 @@ other = "Subscription Management"
 [EnableSubscriptionManagement]
 other = "Enable subscription management"
 
+[ShowServerBilling]
+other = "Show server billing"
+
 [AddSubscription]
 other = "Add Subscription"
 

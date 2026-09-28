@@ -63,6 +63,7 @@ type SettingChangeInput struct {
 	DisableSwitchTemplateInFrontend bool
 	CompatAPIDisable                bool
 	EnableSubscription              bool
+	SyncServerSubscription          bool
 	EnableCurrencyConversion        bool
 	CurrencyProvider                string
 	BaseCurrency                    string
@@ -134,6 +135,7 @@ func BuildConfigSettingDetail(before *model.Config, in SettingChangeInput) strin
 	appendBoolChange(&changes, "Disable frontend theme switch", before.DisableSwitchTemplateInFrontend, in.DisableSwitchTemplateInFrontend)
 	appendBoolChange(&changes, "Template 404 handler", before.UseTemplateHandleNoRoute, in.UseTemplateHandleNoRoute)
 	appendBoolChange(&changes, "Subscription management", before.EnableSubscription, in.EnableSubscription)
+	appendBoolChange(&changes, "Show server billing", before.SyncServerSubscription, in.SyncServerSubscription)
 	appendBoolChange(&changes, "Currency conversion", before.EnableCurrencyConversion, in.EnableCurrencyConversion)
 	appendStrChange(&changes, "Currency provider", before.CurrencyProvider, in.CurrencyProvider)
 	appendStrChange(&changes, "Base currency", before.BaseCurrency, in.BaseCurrency)

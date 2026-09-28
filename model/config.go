@@ -121,6 +121,7 @@ type Config struct {
 	CompatAPIDisable                bool // 兼容API开关
 	UseTemplateHandleNoRoute        bool // 用模板处理无路由情况
 	EnableSubscription              bool // 启用订阅管理
+	SyncServerSubscription          bool // 订阅页显示服务器账单
 	EnableCurrencyConversion        bool // 启用订阅货币换算
 	ShowMonthlyPrice                bool // 订阅列表按月度价格显示
 	CurrencyProvider                string
@@ -178,6 +179,10 @@ func (c *Config) Read(path string) error {
 	// 未显式配置时默认禁用 V1 兼容 API
 	if !c.k.Exists("compatapidisable") {
 		c.CompatAPIDisable = true
+	}
+	// 未显式配置时默认显示服务器账单
+	if !c.k.Exists("syncserversubscription") {
+		c.SyncServerSubscription = true
 	}
 
 	if c.Oauth2.Admin == "" {
