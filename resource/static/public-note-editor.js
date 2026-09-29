@@ -137,6 +137,9 @@
   var WHEEL_VIEW_H = 120;
   var WHEEL_YEAR_START = 1999;
   var WHEEL_YEAR_END = 2099;
+  // 日列上下各铺 5 组重复的 1..N，配合 scrollColToValue 定位到正中一组，
+  // 滚到月末后紧接 1 号，视觉上无限循环
+  var WHEEL_DAY_CYCLES = 11;
 
   function pneMsg(key) {
     return state.$modal.attr("data-pne-" + key) || "";
@@ -278,6 +281,16 @@
     return (WHEEL_VIEW_H - WHEEL_ITEM_H) / 2;
   }
 
+  function buildDayItems(dim) {
+    var html = "";
+    for (var c = 0; c < WHEEL_DAY_CYCLES; c++) {
+      for (var da = 1; da <= dim; da++) {
+        html += '<li data-value="' + da + '">' + ("0" + da).slice(-2) + "</li>";
+      }
+    }
+    return html;
+  }
+
   function buildWheelLists($wheel, y, m, d) {
     var pad = wheelPad();
     var padStyle = "padding:" + pad + "px 0";
@@ -294,15 +307,15 @@
     }
     var dim = daysInMonth(y, m);
     if (d > dim) d = dim;
-    var da;
-    for (da = 1; da <= dim; da++) {
-      $day.append('<li data-value="' + da + '">' + ("0" + da).slice(-2) + "</li>");
-    }
+    $day.append(buildDayItems(dim));
   }
 
   function scrollColToValue($col, value) {
-    var $li = $col.find('li[data-value="' + value + '"]');
-    if (!$li.length) return;
+    var $items = $col.find('li[data-value="' + value + '"]');
+    if (!$items.length) return;
+    // 循环日列里同一日期出现多组，取正中那组定位；
+    // 每次吸附后都回到正中组，向上/向下滚动都始终有富余，实现循环
+    var $li = $items.length > 1 ? $items.eq(Math.floor($items.length / 2)) : $items.first();
     $col.scrollTop($li[0].offsetTop - $col[0].clientHeight / 2 + WHEEL_ITEM_H / 2);
   }
 
@@ -350,31 +363,18 @@
     var $dayCol = $wheel.find('[data-part=day]');
     var dim = daysInMonth(y, m);
     var $ul = $dayCol.find("ul");
-    var currentCount = $ul.children("li").length;
 
     // No change in day count: leave the DOM completely untouched so the
     // column never flickers when only the year/day is adjusted.
-    if (currentCount === dim) return;
+    if ($ul.children("li").length === dim * WHEEL_DAY_CYCLES) return;
 
-    if (dim > currentCount) {
-      // Append only the missing trailing days; existing nodes stay in place.
-      var frag = "";
-      for (var da = currentCount + 1; da <= dim; da++) {
-        frag += '<li data-value="' + da + '">' + ("0" + da).slice(-2) + "</li>";
-      }
-      $ul.append(frag);
-    } else {
-      // Remove only the surplus trailing days.
-      $ul.children("li").slice(dim).remove();
-    }
+    // 天数变了（含闰年二月）：整列重建为循环列表，选中值回到正中组
+    $ul.html(buildDayItems(dim));
 
     // Only re-scroll when the current selection fell out of range
     // (e.g. 31 -> a 30-day month), otherwise keep the position fixed.
-    var cur = getColValue($dayCol);
-    if (cur == null || cur > dim) {
-      var target = !keepDay || keepDay > dim ? dim : keepDay;
-      scrollColToValue($dayCol, target);
-    }
+    var target = !keepDay || keepDay > dim ? dim : keepDay;
+    scrollColToValue($dayCol, target);
     updateColVisibility($dayCol);
   }
 
