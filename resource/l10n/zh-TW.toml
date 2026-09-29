@@ -1042,6 +1042,9 @@ other = "確認關閉雙重驗證並清除已綁定的密鑰？"
 [TwoFactorPasswordChangePrompt]
 other = "修改管理員密碼需要雙重驗證，請輸入目前的動態驗證碼。"
 
+[TwoFactorSensitiveChangePrompt]
+other = "安全敏感設定（管理員名單或自訂程式碼）已變更，請輸入目前的動態驗證碼以確認。"
+
 [TwoFactorV1LoginHint]
 other = "出於安全考量，啟用二次驗證後將停用相容 API 登入"
 

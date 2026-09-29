@@ -112,7 +112,8 @@ func (ma *memberAPI) getToken(c *gin.Context) {
 }
 
 type TokenForm struct {
-	Note string
+	Note          string
+	TwoFactorCode string
 }
 
 // issueNewToken 生成新的 token
@@ -126,6 +127,25 @@ func (ma *memberAPI) issueNewToken(c *gin.Context) {
 			Message: fmt.Sprintf("请求错误：%s", err),
 		})
 		return
+	}
+	// API Token 是绕过登录验证的持久凭据，签发时要求动态验证码，
+	// 防止被盗会话或 CSRF 借管理员浏览器签发后门凭据。
+	if singleton.Conf.TwoFactorActive() {
+		if !allowAuthRateLimitedCheck(c) {
+			c.JSON(http.StatusOK, model.Response{
+				Code:    http.StatusTooManyRequests,
+				Message: "请求过于频繁，请稍后再试",
+			})
+			return
+		}
+		if message := validateSettingChangeTwoFactor(true, singleton.Conf.Site.TwoFactorSecret, tf.TwoFactorCode); message != "" {
+			audit.Record(c, audit.TypeSecurity, "API token issue failed", "invalid two-factor code")
+			c.JSON(http.StatusOK, model.Response{
+				Code:    http.StatusBadRequest,
+				Message: message,
+			})
+			return
+		}
 	}
 	secureToken, err := utils.GenerateRandomString(32)
 	if err != nil {
@@ -1530,8 +1550,9 @@ const (
 	twoFactorSetupTTL         = 10 * time.Minute
 )
 
-func validatePasswordChangeTwoFactor(passwordChanged bool, secret, code string) string {
-	if !passwordChanged || secret == "" {
+// validateSettingChangeTwoFactor 校验安全敏感操作的动态验证码；required 为 false 或未启用双重验证时直接放行。
+func validateSettingChangeTwoFactor(required bool, secret, code string) string {
+	if !required || secret == "" {
 		return ""
 	}
 	if strings.TrimSpace(code) == "" {
@@ -1624,7 +1645,13 @@ func (ma *memberAPI) updateSetting(c *gin.Context) {
 		}
 	}
 	passwordChanged := singleton.Conf.Site.AdminPassword != adminPassword
-	if passwordChanged && singleton.Conf.TwoFactorActive() {
+	// 管理员名单与自定义代码属于安全敏感字段：被盗会话或 CSRF 可借修改
+	// OAuth 管理员白名单植入后门身份，或借自定义代码注入持久 XSS，
+	// 变更时与改密码一样要求动态验证码。
+	sensitiveSettingChanged := singleton.Conf.Site.CustomCode != sf.CustomCode ||
+		singleton.Conf.Site.CustomCodeDashboard != sf.CustomCodeDashboard ||
+		singleton.Conf.Oauth2.Admin != sf.Admin
+	if (passwordChanged || sensitiveSettingChanged) && singleton.Conf.TwoFactorActive() {
 		if !allowAuthRateLimitedCheck(c) {
 			c.JSON(http.StatusOK, model.Response{
 				Code:    http.StatusTooManyRequests,
@@ -1632,8 +1659,12 @@ func (ma *memberAPI) updateSetting(c *gin.Context) {
 			})
 			return
 		}
-		if message := validatePasswordChangeTwoFactor(passwordChanged, singleton.Conf.Site.TwoFactorSecret, sf.TwoFactorCode); message != "" {
-			audit.Record(c, audit.TypeSecurity, "Admin password change failed", "invalid two-factor code")
+		if message := validateSettingChangeTwoFactor(passwordChanged || sensitiveSettingChanged, singleton.Conf.Site.TwoFactorSecret, sf.TwoFactorCode); message != "" {
+			auditReason := "Admin password change failed"
+			if !passwordChanged {
+				auditReason = "Admin security setting change failed"
+			}
+			audit.Record(c, audit.TypeSecurity, auditReason, "invalid two-factor code")
 			c.JSON(http.StatusOK, model.Response{
 				Code:    http.StatusBadRequest,
 				Message: message,

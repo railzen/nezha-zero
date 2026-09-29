@@ -8,6 +8,12 @@
                 <label>{{tr "Note"}}</label>
                 <textarea name="Note"></textarea>
             </div>
+            {{if .Conf.Site.TwoFactorSecret}}
+            <div class="field">
+                <label>{{tr "TwoFactorCode"}}</label>
+                <input type="text" name="TwoFactorCode" placeholder="{{tr "TwoFactorCodePlaceholder"}}" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,6)">
+            </div>
+            {{end}}
         </form>
     </div>
     <div class="actions">

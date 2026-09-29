@@ -1042,6 +1042,9 @@ other = "Disable two-factor authentication and remove the bound secret?"
 [TwoFactorPasswordChangePrompt]
 other = "Changing the administrator password requires two-factor authentication. Enter your current authentication code."
 
+[TwoFactorSensitiveChangePrompt]
+other = "Security-sensitive settings (administrator list or custom code) have changed. Enter your current authentication code to confirm."
+
 [TwoFactorV1LoginHint]
 other = "For security reasons, enabling two-factor authentication disables Compatible API login"
 

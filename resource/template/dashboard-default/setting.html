@@ -432,9 +432,9 @@
     </div>
 </div>
 <div class="ui small modal" id="twoFactorPasswordModal">
-    <div class="header">{{tr "AdminPassword"}}</div>
+    <div class="header" id="twoFactorPasswordHeader">{{tr "AdminPassword"}}</div>
     <div class="content">
-        <p>{{tr "TwoFactorPasswordChangePrompt"}}</p>
+        <p id="twoFactorPasswordPrompt">{{tr "TwoFactorPasswordChangePrompt"}}</p>
         <div class="ui form" style="margin-top: 1em;">
             <div class="field">
                 <label>{{tr "TwoFactorCode"}}</label>
@@ -460,6 +460,11 @@
 
     const hasAdminPassword = {{if .Conf.Site.AdminPassword}}true{{else}}false{{end}};
     const twoFactorEnabled = {{if .Conf.Site.TwoFactorSecret}}true{{else}}false{{end}};
+
+    // 安全敏感字段的初始值：变更时需要二次验证（与后端校验保持一致）
+    const initialAdminList = $('input[name=Admin]').val() || '';
+    const initialCustomCode = $('textarea[name=CustomCode]').val() || '';
+    const initialCustomCodeDashboard = $('textarea[name=CustomCodeDashboard]').val() || '';
 
     function isAdminPasswordUnchanged(pwd) {
         return pwd === '********' || (hasAdminPassword && !pwd);
@@ -591,7 +596,18 @@
                 $passwordInput.val('********');
             }
         }
-        if (twoFactorEnabled && passwordWillChange) {
+        const sensitiveSettingChanged =
+            ($('input[name=Admin]').val() || '') !== initialAdminList ||
+            ($('textarea[name=CustomCode]').val() || '') !== initialCustomCode ||
+            ($('textarea[name=CustomCodeDashboard]').val() || '') !== initialCustomCodeDashboard;
+        if (twoFactorEnabled && (passwordWillChange || sensitiveSettingChanged)) {
+            if (passwordWillChange) {
+                $('#twoFactorPasswordHeader').text('{{tr "AdminPassword"}}');
+                $('#twoFactorPasswordPrompt').text('{{tr "TwoFactorPasswordChangePrompt"}}');
+            } else {
+                $('#twoFactorPasswordHeader').text('{{tr "TwoFactorLoginTitle"}}');
+                $('#twoFactorPasswordPrompt').text('{{tr "TwoFactorSensitiveChangePrompt"}}');
+            }
             $('#twoFactorPasswordCode').val('');
             twoFactorPasswordModal.modal('show');
             return false;
