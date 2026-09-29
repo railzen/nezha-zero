@@ -651,7 +651,7 @@ function issueNewApiToken(apiToken) {
     .html(
       apiToken ? LANG.Edit + '<i class="edit icon"></i>' : LANG.Add + '<i class="add icon"></i>'
     );
-  modal.find("textarea[name=Note]").val(apiToken ? apiToken.Note : null);
+  modal.find("input[name=Note]").val(apiToken ? apiToken.Note : null);
   modal.find("input[name=TwoFactorCode]").val("");
   showFormModal(".api.modal", "#apiForm", "/api/token", null, showIssuedApiToken);
 }
