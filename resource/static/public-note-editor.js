@@ -172,6 +172,15 @@
     return d;
   }
 
+  function addOneYear(date) {
+    var d = new Date(date.getTime());
+    var day = d.getDate();
+    d.setDate(1);
+    d.setFullYear(d.getFullYear() + 1);
+    d.setDate(Math.min(day, daysInMonth(d.getFullYear(), d.getMonth() + 1)));
+    return d;
+  }
+
   function defaultWheelDate(target) {
     if (target === "pne_end_date" || target === "EndDate") return addYears(new Date(), 1);
     return new Date();
@@ -240,6 +249,7 @@
     $wheel.data("pneConfigured", true);
     $wheel.data("pneTouched", false);
     positionWheelToDate($wheel, isoDate);
+    syncLinkedEndWheel($wheel);
     updatePreview();
   }
 
@@ -420,7 +430,36 @@
     state.$modal.find('.pne-date-manual[data-target="' + target + '"]').val(iso);
     updateDateClearVisibility(target);
     updatePreview();
+    syncLinkedEndWheel($wheel);
     return iso;
+  }
+
+  function wheelDisplayDate($wheel) {
+    var y = getColValue($wheel.find('[data-part=year]'));
+    var m = getColValue($wheel.find('[data-part=month]'));
+    var d = getColValue($wheel.find('[data-part=day]'));
+    if (!y || !m || !d) return null;
+    return new Date(y, m - 1, d);
+  }
+
+  function linkedEndTarget(target) {
+    var key = String(target || "").toLowerCase();
+    if (key === "pne_start_date") return "pne_end_date";
+    if (key === "startdate") return "EndDate";
+    return "";
+  }
+
+  // 左侧日期改定后，若右侧日期仍为空（未配置），右侧滚轮自动展示左侧日期+1
+  // 年；只移动滚轮显示，不写入输入框，右侧一旦配置过或被操作过就不再跟随
+  function syncLinkedEndWheel($startWheel) {
+    var endTarget = linkedEndTarget($startWheel.data("target"));
+    if (!endTarget) return;
+    var $end = state.$modal.find('.pne-wheel-date[data-target="' + endTarget + '"]');
+    if (!$end.length || $end.data("pneConfigured") || $end.hasClass("is-disabled")) return;
+    var base = wheelDisplayDate($startWheel);
+    if (!base) return;
+    var shifted = addOneYear(base);
+    positionWheelAt($end, shifted.getFullYear(), shifted.getMonth() + 1, shifted.getDate());
   }
 
   function initWheelDate($wheel) {

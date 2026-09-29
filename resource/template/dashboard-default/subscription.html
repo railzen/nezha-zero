@@ -207,7 +207,7 @@ html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-l
                             {{tr "RemainingDays"}}
                             <span id="subscriptionRemainingSort" class="subscription-remaining-sort" title="{{tr "SortByRemainingDays"}}" role="button" tabindex="0" aria-pressed="false"><i class="sort amount down icon"></i></span>
                         </th>
-                        {{$priceSortable := and $.Conf.ShowMonthlyPrice $.Conf.EnableCurrencyConversion}}
+                        {{$priceSortable := $.Conf.EnableCurrencyConversion}}
                         <th{{if $priceSortable}} class="subscription-price-header"{{end}}>{{if $.Conf.ShowMonthlyPrice}}{{tr "PriceMonthly"}}{{else}}{{tr "Price"}}{{end}}{{if $priceSortable}} <span id="subscriptionPriceSort" class="subscription-price-sort" title="{{tr "SortByPrice"}}" role="button" tabindex="0" aria-pressed="false"><i class="sort amount down icon"></i></span>{{end}}</th>
                         <th>{{tr "PriceUnit"}}</th>
                         {{if $hasSubscriptionNotes}}<th>{{tr "Note"}}</th>{{end}}
