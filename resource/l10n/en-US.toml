@@ -1240,6 +1240,9 @@ other = "Days Remaining"
 [SortByRemainingDays]
 other = "Sort by days remaining"
 
+[SortByPrice]
+other = "Sort by price"
+
 [SubscriptionGroup]
 other = "Group"
 

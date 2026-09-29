@@ -1239,6 +1239,9 @@ other = "剩餘天數"
 [SortByRemainingDays]
 other = "按剩餘天數排序"
 
+[SortByPrice]
+other = "按價格排序"
+
 [SubscriptionGroup]
 other = "分組"
 

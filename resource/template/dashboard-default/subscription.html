@@ -35,24 +35,29 @@
 .subscription-group-filter.active > .filter.icon {
     color: rgba(0,0,0,.38);
 }
-.subscription-remaining-header {
+.subscription-remaining-header,
+.subscription-price-header {
     cursor: pointer;
 }
-.subscription-remaining-sort {
+.subscription-remaining-sort,
+.subscription-price-sort {
     margin-left: .2rem;
     cursor: pointer;
 }
-.subscription-remaining-sort > .icon {
+.subscription-remaining-sort > .icon,
+.subscription-price-sort > .icon {
     margin: 0 !important;
     color: rgba(0,0,0,.22);
     font-size: .58em;
     opacity: 1;
     transition: color .15s ease;
 }
-.subscription-remaining-header:hover .subscription-remaining-sort > .icon {
+.subscription-remaining-header:hover .subscription-remaining-sort > .icon,
+.subscription-price-header:hover .subscription-price-sort > .icon {
     color: rgba(0,0,0,.3);
 }
-.subscription-remaining-sort.active > .icon {
+.subscription-remaining-sort.active > .icon,
+.subscription-price-sort.active > .icon {
     color: rgba(0,0,0,.58);
 }
 .subscription-days-warning {
@@ -202,7 +207,8 @@ html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-l
                             {{tr "RemainingDays"}}
                             <span id="subscriptionRemainingSort" class="subscription-remaining-sort" title="{{tr "SortByRemainingDays"}}" role="button" tabindex="0" aria-pressed="false"><i class="sort amount down icon"></i></span>
                         </th>
-                        <th>{{if $.Conf.ShowMonthlyPrice}}{{tr "PriceMonthly"}}{{else}}{{tr "Price"}}{{end}}</th>
+                        {{$priceSortable := and $.Conf.ShowMonthlyPrice $.Conf.EnableCurrencyConversion}}
+                        <th{{if $priceSortable}} class="subscription-price-header"{{end}}>{{if $.Conf.ShowMonthlyPrice}}{{tr "PriceMonthly"}}{{else}}{{tr "Price"}}{{end}}{{if $priceSortable}} <span id="subscriptionPriceSort" class="subscription-price-sort" title="{{tr "SortByPrice"}}" role="button" tabindex="0" aria-pressed="false"><i class="sort amount down icon"></i></span>{{end}}</th>
                         <th>{{tr "PriceUnit"}}</th>
                         {{if $hasSubscriptionNotes}}<th>{{tr "Note"}}</th>{{end}}
                         <th>{{tr "Administration"}}</th>
@@ -210,7 +216,7 @@ html[nz-theme='dark'] #subscriptionForm.server-locked .field:not(.subscription-l
                 </thead>
                 <tbody>
                     {{range $subscription := .Subscriptions}}
-                    <tr class="subscription-row" data-subscription-group="{{$subscription.Group}}" data-enabled="{{if $subscription.Enabled}}1{{else}}0{{end}}" data-lifetime="{{if $subscription.Lifetime}}1{{else}}0{{end}}" data-has-end="{{if $subscription.HasEndDate}}1{{else}}0{{end}}" data-remaining-days="{{$subscription.RemainingDays}}" data-has-cost="{{if $subscription.HasCost}}1{{else}}0{{end}}" data-monthly-cost="{{$subscription.MonthlyCost}}" data-yearly-cost="{{$subscription.YearlyCost}}" data-cost-currency="{{$subscription.CostCurrency}}">
+                    <tr class="subscription-row" data-subscription-group="{{$subscription.Group}}" data-enabled="{{if $subscription.Enabled}}1{{else}}0{{end}}" data-lifetime="{{if $subscription.Lifetime}}1{{else}}0{{end}}" data-has-end="{{if $subscription.HasEndDate}}1{{else}}0{{end}}" data-remaining-days="{{$subscription.RemainingDays}}" data-has-cost="{{if $subscription.HasCost}}1{{else}}0{{end}}" data-monthly-cost="{{$subscription.MonthlyCost}}" data-yearly-cost="{{$subscription.YearlyCost}}" data-cost-currency="{{$subscription.CostCurrency}}" data-display-amount="{{$subscription.DisplayAmount}}">
                         <td class="subscription-select-column">{{if $subscription.Manual}}<input type="checkbox" class="nezha-subscriptions" value="{{$subscription.ID}}">{{else}}-{{end}}</td>
                         <td>{{if $subscription.Manual}}{{$subscription.ID}}({{$subscription.DisplayIndex}}){{else}}S{{$subscription.ID}}{{end}}</td>
                         <td>{{$subscription.Name}}</td>
@@ -401,6 +407,28 @@ const subscriptionRowOriginalIndexes = new Map(subscriptionRows.map(function (ro
 }));
 const subscriptionRemainingSort = document.getElementById('subscriptionRemainingSort');
 let subscriptionRemainingSortActive = false;
+const subscriptionPriceSort = document.getElementById('subscriptionPriceSort');
+let subscriptionPriceSortState = 0; // 0 = 不排序，1 = 从低到高，2 = 从高到低
+
+function applySubscriptionRowOrder(rows) {
+    const tbody = subscriptionRows.length > 0 ? subscriptionRows[0].parentNode : null;
+    if (tbody) rows.forEach(function (row) { tbody.appendChild(row); });
+}
+
+function setSubscriptionRemainingSortActive(active) {
+    subscriptionRemainingSortActive = active;
+    subscriptionRemainingSort.classList.toggle('active', active);
+    subscriptionRemainingSort.setAttribute('aria-pressed', active ? 'true' : 'false');
+}
+
+function setSubscriptionPriceSortState(state) {
+    subscriptionPriceSortState = state;
+    if (!subscriptionPriceSort) return;
+    subscriptionPriceSort.classList.toggle('active', state !== 0);
+    subscriptionPriceSort.setAttribute('aria-pressed', state !== 0 ? 'true' : 'false');
+    const icon = subscriptionPriceSort.querySelector('i');
+    if (icon) icon.className = state === 1 ? 'sort amount up icon' : 'sort amount down icon';
+}
 
 function subscriptionRemainingSortKey(row) {
     const enabled = row.dataset.enabled === '1';
@@ -414,19 +442,48 @@ function subscriptionRemainingSortKey(row) {
     return [2, 0];
 }
 
+// 展示价格已由后端按"月度价格显示"与"货币换算"统一口径计算，
+// 这里直接取行上的展示金额（千分位字符串）作为排序键。
+// 分三档：正常启用且有价格的按价格排序，未启用的居中，无价格数据的沉底
+function subscriptionPriceSortKey(row) {
+    const amount = parseFloat(String(row.dataset.displayAmount || '').replace(/,/g, ''));
+    if (isNaN(amount)) return [2, 0];
+    return [row.dataset.enabled === '1' ? 0 : 1, amount];
+}
+
 function toggleSubscriptionRemainingSort() {
-    subscriptionRemainingSortActive = !subscriptionRemainingSortActive;
-    const rows = subscriptionRemainingSortActive ? subscriptionRows.slice().sort(function (a, b) {
+    const active = !subscriptionRemainingSortActive;
+    setSubscriptionRemainingSortActive(active);
+    if (!active) {
+        applySubscriptionRowOrder(subscriptionRows);
+        return;
+    }
+    setSubscriptionPriceSortState(0);
+    applySubscriptionRowOrder(subscriptionRows.slice().sort(function (a, b) {
         const aKey = subscriptionRemainingSortKey(a);
         const bKey = subscriptionRemainingSortKey(b);
         if (aKey[0] !== bKey[0]) return aKey[0] - bKey[0];
         if (aKey[0] === 0 && aKey[1] !== bKey[1]) return aKey[1] - bKey[1];
         return subscriptionRowOriginalIndexes.get(a) - subscriptionRowOriginalIndexes.get(b);
-    }) : subscriptionRows;
-    const tbody = subscriptionRows.length > 0 ? subscriptionRows[0].parentNode : null;
-    if (tbody) rows.forEach(function (row) { tbody.appendChild(row); });
-    subscriptionRemainingSort.classList.toggle('active', subscriptionRemainingSortActive);
-    subscriptionRemainingSort.setAttribute('aria-pressed', subscriptionRemainingSortActive ? 'true' : 'false');
+    }));
+}
+
+function toggleSubscriptionPriceSort() {
+    if (!subscriptionPriceSort) return;
+    setSubscriptionPriceSortState((subscriptionPriceSortState + 1) % 3);
+    if (subscriptionPriceSortState === 0) {
+        applySubscriptionRowOrder(subscriptionRows);
+        return;
+    }
+    setSubscriptionRemainingSortActive(false);
+    const direction = subscriptionPriceSortState === 1 ? 1 : -1;
+    applySubscriptionRowOrder(subscriptionRows.slice().sort(function (a, b) {
+        const aKey = subscriptionPriceSortKey(a);
+        const bKey = subscriptionPriceSortKey(b);
+        if (aKey[0] !== bKey[0]) return aKey[0] - bKey[0];
+        if (aKey[1] !== bKey[1]) return (aKey[1] - bKey[1]) * direction;
+        return subscriptionRowOriginalIndexes.get(a) - subscriptionRowOriginalIndexes.get(b);
+    }));
 }
 
 subscriptionRemainingSort.closest('th').addEventListener('click', toggleSubscriptionRemainingSort);
@@ -436,6 +493,15 @@ subscriptionRemainingSort.addEventListener('keydown', function (event) {
     event.stopPropagation();
     toggleSubscriptionRemainingSort();
 });
+if (subscriptionPriceSort) {
+    subscriptionPriceSort.closest('th').addEventListener('click', toggleSubscriptionPriceSort);
+    subscriptionPriceSort.addEventListener('keydown', function (event) {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        event.stopPropagation();
+        toggleSubscriptionPriceSort();
+    });
+}
 const subscriptionGroups = Array.from(new Set(subscriptionRows.map(function (row) {
     return row.dataset.subscriptionGroup;
 }))).sort(function (a, b) { return a.localeCompare(b); });

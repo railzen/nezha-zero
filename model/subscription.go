@@ -226,6 +226,9 @@ func DetectCurrency(value string) string {
 		if len(match) > 1 && IsSupportedCurrency(match[1]) {
 			return match[1]
 		}
+		if len(match) > 1 && match[1] == "RMB" { // RMB 不是 ISO 4217 代码，识别为 CNY
+			return "CNY"
+		}
 	}
 	symbols := []struct{ Symbol, Code string }{
 		{"NT$", "TWD"}, {"HK$", "HKD"}, {"NZ$", "NZD"}, {"Mex$", "MXN"},
