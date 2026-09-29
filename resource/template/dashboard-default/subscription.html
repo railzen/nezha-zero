@@ -545,10 +545,7 @@ function filterSubscriptionsByGroup(group) {
             if (checkbox) checkbox.checked = false;
             return;
         }
-        const hasEnd = row.dataset.hasEnd === '1';
-        const remaining = parseInt(row.dataset.remainingDays, 10) || 0;
-        const isActive = row.dataset.enabled === '1' && (!hasEnd || remaining >= 0);
-        if (isActive && row.dataset.hasCost === '1') {
+        if (row.dataset.enabled === '1' && row.dataset.hasCost === '1') {
             const currency = row.dataset.costCurrency;
             addSubscriptionCost(monthlyCosts, currency, parseFloat(row.dataset.monthlyCost) || 0);
             addSubscriptionCost(yearlyCosts, currency, parseFloat(row.dataset.yearlyCost) || 0);
