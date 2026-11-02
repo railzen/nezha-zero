@@ -10,6 +10,9 @@
         const mobileTerminalDevice = navigator.userAgentData?.mobile === true ||
             /Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent) ||
             (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        // Apple 平台粘贴用 Cmd+V，Ctrl+V 应保留给终端（如 vim 列选择）
+        const appleTerminalDevice = navigator.userAgentData?.platform === 'macOS' ||
+            /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent);
         if (mobileTerminalDevice) {
             document.documentElement.classList.add('mobile-terminal');
             document.querySelector('meta[name="viewport"]').content += ', interactive-widget=resizes-content';
@@ -260,22 +263,25 @@
         const fitAddon = new FitAddon.FitAddon();
         term.loadAddon(fitAddon);
 
-        if (mobileTerminalDevice) {
-            term.attachCustomKeyEventHandler(function (ev) {
-                if (ev.type !== 'keydown') return true;
-                lastKeyWasIME = ev.keyCode === 229 || ev.key === 'Unidentified' || ev.key === 'Process';
-                if (lastKeyWasIME) return false;
-                if (controlActive && ev.key && ev.key.length === 1) {
-                    const sequence = controlSequenceForInput(ev.key);
-                    setControlActive(false);
-                    if (sequence !== null) {
-                        if (socket.readyState === WebSocket.OPEN) socket.send(sequence);
-                        return false;
-                    }
+        term.attachCustomKeyEventHandler(function (ev) {
+            if (ev.type !== 'keydown') return true;
+            if (!appleTerminalDevice && ev.ctrlKey && !ev.shiftKey && !ev.altKey && !ev.metaKey &&
+                (ev.key === 'v' || ev.key === 'V' || ev.keyCode === 86)) {
+                return false;
+            }
+            if (!mobileTerminalDevice) return true;
+            lastKeyWasIME = ev.keyCode === 229 || ev.key === 'Unidentified' || ev.key === 'Process';
+            if (lastKeyWasIME) return false;
+            if (controlActive && ev.key && ev.key.length === 1) {
+                const sequence = controlSequenceForInput(ev.key);
+                setControlActive(false);
+                if (sequence !== null) {
+                    if (socket.readyState === WebSocket.OPEN) socket.send(sequence);
+                    return false;
                 }
-                return true;
-            });
-        }
+            }
+            return true;
+        });
 
         const terminalContainer = document.getElementById('terminal-container');
         term.open(terminalContainer);
