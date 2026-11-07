@@ -44,6 +44,7 @@ func LoadSingleton() {
 	loadExpirationReminders()
 	loadCurrencyRates()
 	loadAPI()
+	RefreshPasskeyCount()
 	initNAT()
 	initDDNS()
 }
@@ -75,7 +76,8 @@ func InitDBFromPath(path string) {
 		model.Notification{}, model.AlertRule{}, model.Monitor{},
 		model.MonitorHistory{}, model.Cron{}, model.Transfer{},
 		model.ApiToken{}, model.NAT{}, model.DDNSProfile{},
-		model.AuditLog{}, model.Subscription{}, model.CurrencySnapshot{})
+		model.AuditLog{}, model.Subscription{}, model.CurrencySnapshot{},
+		model.Passkey{})
 	if err != nil {
 		panic(err)
 	}

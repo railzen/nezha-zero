@@ -136,6 +136,91 @@
         margin: 0;
         justify-self: end;
     }
+
+    .login-security-actions.ui.buttons {
+        justify-self: end;
+        margin: 0;
+    }
+
+    .login-security-actions .ui.button {
+        white-space: nowrap;
+    }
+
+    .login-security-actions .ui.button + .ui.button {
+        border-left: 1px solid rgba(127, 127, 127, 0.3);
+    }
+
+    /* 窄屏下按钮组与复选框放不下一行，单独占一行并平分宽度 */
+    @media (max-width: 600px) {
+        .login-security-controls {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 1rem;
+        }
+
+        .login-security-actions.ui.buttons {
+            justify-self: stretch;
+            display: flex;
+        }
+
+        .login-security-actions .ui.button {
+            flex: 1 1 0;
+            padding-left: 0.75em;
+            padding-right: 0.75em;
+        }
+    }
+
+    .passkey-hint {
+        margin-bottom: 1rem;
+    }
+
+    .passkey-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid rgba(127, 127, 127, 0.2);
+    }
+
+    .passkey-item:last-child {
+        border-bottom: none;
+    }
+
+    .passkey-item-main {
+        min-width: 0;
+    }
+
+    .passkey-item-name {
+        font-weight: 600;
+        overflow-wrap: anywhere;
+    }
+
+    .passkey-item-meta {
+        margin-top: 0.25rem;
+        font-size: 0.92857143rem;
+        opacity: 0.65;
+        overflow-wrap: anywhere;
+    }
+
+    .passkey-item .ui.button {
+        flex: 0 0 auto;
+        margin: 0;
+    }
+
+    .passkey-empty,
+    .passkey-hint,
+    .two-factor-passkey-hint {
+        opacity: 0.65;
+    }
+
+    .passkey-hint {
+        line-height: 1.5;
+    }
+
+    .two-factor-passkey-hint {
+        margin-top: 0.75rem;
+        font-size: 0.92857143rem;
+    }
 </style>
 <div class="nb-container">
     <div class="ui container">
@@ -163,6 +248,11 @@
                             <label>{{tr "DisablePasswordLogin"}}</label>
                         </div>
                     </div>
+                    <div class="ui buttons login-security-actions">
+                    <button type="button" class="ui button" id="passkeyManageBtn">
+                        <i class="{{if .Passkeys}}green {{end}}key icon"></i>
+                        {{tr "Passkey"}}{{if gt .PasskeyCount 1}} ({{.PasskeyCount}}){{end}}
+                    </button>
                     {{if .Conf.Site.TwoFactorSecret}}
                     <button type="button" class="ui button" id="twoFactorDisableBtn" title="{{tr "EnableTwoFactor"}}">
                         <i class="green shield alternate icon"></i>
@@ -174,6 +264,7 @@
                         {{tr "TwoFactorEnableBtn"}}
                     </button>
                     {{end}}
+                    </div>
                 </div>
                 <div class="field" id="passwordLoginSettings">
                     <label>{{tr "AdminPassword"}}</label>
@@ -426,6 +517,10 @@
                 <input type="text" id="twoFactorDisableCode" placeholder="{{tr "TwoFactorCodePlaceholder"}}" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6">
             </div>
         </div>
+        {{if .PasskeyEnabled}}
+        <div class="ui horizontal divider">{{tr "PasskeyOr"}}</div>
+        <button type="button" class="ui fluid button nezha-passkey-btn" id="twoFactorDisablePasskeyBtn"><i class="key icon"></i>{{tr "PasskeyVerify"}}</button>
+        {{end}}
     </div>
     <div class="actions">
         <div class="ui cancel button">{{tr "Cancel"}}</div>
@@ -442,10 +537,90 @@
                 <input type="text" id="twoFactorPasswordCode" placeholder="{{tr "TwoFactorCodePlaceholder"}}" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6">
             </div>
         </div>
+        {{if .PasskeyEnabled}}
+        <div class="ui horizontal divider">{{tr "PasskeyOr"}}</div>
+        <button type="button" class="ui fluid button nezha-passkey-btn" id="twoFactorPasswordPasskeyBtn"><i class="key icon"></i>{{tr "PasskeyVerify"}}</button>
+        {{end}}
     </div>
     <div class="actions">
         <div class="ui cancel button">{{tr "Cancel"}}</div>
         <div class="ui nezha-primary-btn button" id="twoFactorPasswordConfirmBtn">{{tr "Save"}}</div>
+    </div>
+</div>
+<div class="ui small modal" id="passkeyManageModal">
+    <div class="header">{{tr "Passkey"}}</div>
+    <div class="content">
+        <p class="passkey-hint">{{tr "PasskeyHint"}}</p>
+        <div class="passkey-list">
+            {{range .Passkeys}}
+            <div class="passkey-item">
+                <div class="passkey-item-main">
+                    <div class="passkey-item-name"><i class="key icon"></i>{{.Name}}</div>
+                    <div class="passkey-item-meta">
+                        {{.UserLogin}} · {{.RPID}}{{if not .CurrentRP}} ({{tr "PasskeyOtherDomain"}}){{end}}
+                        · {{tr "PasskeyAddedAt"}} {{.CreatedAt}}
+                        · {{tr "PasskeyLastUsed"}} {{if .LastUsedAt}}{{.LastUsedAt}}{{else}}{{tr "PasskeyNeverUsed"}}{{end}}
+                    </div>
+                </div>
+                <button type="button" class="ui small basic button passkey-delete-btn" data-id="{{.ID}}" data-name="{{.Name}}">{{tr "PasskeyDelete"}}</button>
+            </div>
+            {{else}}
+            <div class="passkey-empty">{{tr "PasskeyEmpty"}}</div>
+            {{end}}
+        </div>
+    </div>
+    <div class="actions">
+        <div class="ui cancel button">{{tr "Cancel"}}</div>
+        <div class="ui nezha-primary-btn button" id="passkeyAddBtn"><i class="add icon"></i>{{tr "PasskeyAdd"}}</div>
+    </div>
+</div>
+<div class="ui small modal" id="passkeyAddModal">
+    <div class="header">{{tr "PasskeyAdd"}}</div>
+    <div class="content">
+        <p>{{tr "PasskeyAddPrompt"}}</p>
+        <div class="ui form" style="margin-top: 1em;">
+            <div class="field">
+                <label>{{tr "PasskeyName"}}</label>
+                <input type="text" id="passkeyAddName" maxlength="32" placeholder="{{tr "PasskeyNamePlaceholder"}}" autocomplete="off">
+            </div>
+            {{if .Conf.Site.AdminPassword}}
+            <div class="field">
+                <label>{{tr "AdminPassword"}}</label>
+                <input type="password" id="passkeyAddPassword" placeholder="{{tr "PasskeyPasswordPlaceholder"}}" autocomplete="current-password" data-lpignore="true" data-1p-ignore data-bwignore>
+            </div>
+            {{end}}
+            {{if .Conf.Site.TwoFactorSecret}}
+            <div class="field">
+                <label>{{tr "TwoFactorCode"}}</label>
+                <input type="text" id="passkeyAddCode" placeholder="{{tr "TwoFactorCodePlaceholder"}}" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6">
+            </div>
+            {{end}}
+        </div>
+        {{if and .Conf.Site.TwoFactorSecret .PasskeyEnabled}}<p class="two-factor-passkey-hint">{{tr "PasskeyCodeOptionalHint"}}</p>{{end}}
+    </div>
+    <div class="actions">
+        <div class="ui cancel button">{{tr "Cancel"}}</div>
+        <div class="ui nezha-primary-btn button" id="passkeyAddConfirmBtn">{{tr "PasskeyAdd"}}</div>
+    </div>
+</div>
+<div class="ui small modal" id="passkeyDeleteModal">
+    <div class="header">{{tr "PasskeyDeleteTitle"}}</div>
+    <div class="content">
+        <p><b id="passkeyDeleteName"></b></p>
+        <p>{{tr "PasskeyDeleteConfirm"}}</p>
+        {{if .Conf.Site.TwoFactorSecret}}
+        <div class="ui form" style="margin-top: 1em;">
+            <div class="field">
+                <label>{{tr "TwoFactorCode"}}</label>
+                <input type="text" id="passkeyDeleteCode" placeholder="{{tr "TwoFactorCodePlaceholder"}}" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6">
+            </div>
+        </div>
+        <p class="two-factor-passkey-hint">{{tr "PasskeyCodeOptionalHint"}}</p>
+        {{end}}
+    </div>
+    <div class="actions">
+        <div class="ui cancel button">{{tr "Cancel"}}</div>
+        <div class="ui red button" id="passkeyDeleteConfirmBtn">{{tr "PasskeyDelete"}}</div>
     </div>
 </div>
 {{template "common/footer" .}}
@@ -537,10 +712,13 @@
         }
     });
 
-    function submitSettings(twoFactorCode) {
+    function submitSettings(twoFactorCode, passkeyAssertion) {
         const data = $('#settingForm').serializeArray();
         if (twoFactorCode) {
             data.push({ name: 'TwoFactorCode', value: twoFactorCode });
+        }
+        if (passkeyAssertion) {
+            data.push({ name: 'PasskeyAssertion', value: passkeyAssertion });
         }
         $.post('/api/setting', $.param(data))
             .then((resp) => {
@@ -856,6 +1034,223 @@
             confirmTwoFactorDisable();
         }
     });
+    // ===== 通行密钥 =====
+    const passkeyEnabled = {{if .PasskeyEnabled}}true{{else}}false{{end}};
+
+    function alertError(err) {
+        $.suiAlert({
+            title: '',
+            description: nzPasskey.errorMessage(err),
+            type: 'error',
+            time: '3',
+            position: 'top-center',
+        });
+    }
+
+    // 收集二次验证：填写了验证码时使用验证码，否则在已添加通行密钥时调用通行密钥验证。
+    // 返回 {code} 或 {passkey}；未启用双重验证时返回空对象
+    function collectSecondFactor(code) {
+        code = (code || '').trim();
+        if (!twoFactorEnabled) {
+            return Promise.resolve({});
+        }
+        if (code) {
+            if (code.length !== 6) {
+                return Promise.reject(new Error('{{tr "TwoFactorCodePlaceholder"}}'));
+            }
+            return Promise.resolve({ code: code });
+        }
+        if (passkeyEnabled) {
+            return nzPasskey.verify().then(function (assertion) {
+                return { passkey: assertion };
+            });
+        }
+        return Promise.reject(new Error('{{tr "TwoFactorCodePlaceholder"}}'));
+    }
+
+    // 防止重复点击：按钮处于 loading 时忽略，task 结束后恢复
+    function withLoading($btn, task) {
+        if ($btn.hasClass('loading')) {
+            return;
+        }
+        $btn.addClass('loading');
+        Promise.resolve()
+            .then(task)
+            .catch(alertError)
+            .finally(function () {
+                $btn.removeClass('loading');
+            });
+    }
+
+
+    $('#passkeyAddCode, #passkeyDeleteCode').on('input', function () {
+        this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);
+    });
+
+    // 修改管理员密码 / 安全敏感设置：用通行密钥代替动态验证码
+    $('#twoFactorPasswordPasskeyBtn').on('click', function () {
+        withLoading($(this), function () {
+            return nzPasskey.verify().then(function (assertion) {
+                submitSettings('', assertion);
+            });
+        });
+    });
+
+    // 关闭双重验证：用通行密钥代替动态验证码
+    $('#twoFactorDisablePasskeyBtn').on('click', function () {
+        withLoading($(this), function () {
+            return nzPasskey.verify()
+                .then((assertion) => totpRequest({ operation: 'unbind', passkey: assertion }))
+                .then((resp) => {
+                    if (resp.code !== 200) {
+                        throw new Error(resp.message);
+                    }
+                    twoFactorDisableModal.modal('hide');
+                    $.suiAlert({
+                        title: '',
+                        description: resp.message || '{{tr "ModifiedSuccessfully"}}',
+                        type: 'success',
+                        time: '2',
+                        position: 'top-center',
+                    });
+                    setTimeout(() => window.location.reload(), 600);
+                });
+        });
+    });
+
+    // 与 TOTP 一致：设置页只放入口按钮，列表、添加、删除都在弹窗内完成
+    const passkeyManageModal = $('#passkeyManageModal');
+    passkeyManageModal.modal({ closable: true });
+    $('#passkeyManageBtn').on('click', function () {
+        passkeyManageModal.modal('show');
+    });
+
+    const passkeyAddModal = $('#passkeyAddModal');
+    // 已通过二次验证并取得注册选项、但浏览器创建被取消时保留选项，再次点击直接创建，避免重复验证
+    let pendingPasskeyCreation = null;
+    passkeyAddModal.modal({
+        closable: true,
+        onHidden: function () {
+            $('#passkeyAddName').val('');
+            $('#passkeyAddPassword').val('');
+            $('#passkeyAddCode').val('');
+            pendingPasskeyCreation = null;
+        }
+    });
+
+    $('#passkeyAddBtn').on('click', function () {
+        if (!nzPasskey.supported()) {
+            alertError(new Error('{{tr "PasskeyUnsupported"}}'));
+            return;
+        }
+        pendingPasskeyCreation = null;
+        passkeyAddModal.modal('show');
+    });
+
+    async function addPasskey() {
+        const pending = pendingPasskeyCreation;
+        pendingPasskeyCreation = null;
+        let options = pending && performance.now() < pending.expiresAt ? pending.options : null;
+        let expiresAt = options ? pending.expiresAt : 0;
+        if (!options) {
+            // 已设置管理员密码时必须输入当前密码；先于二次验证检查，避免密码漏填时白白调起一次通行密钥验证
+            const password = $('#passkeyAddPassword').val() || '';
+            if (hasAdminPassword && !password) {
+                $('#passkeyAddPassword').focus();
+                throw new Error('{{tr "PasskeyPasswordPlaceholder"}}');
+            }
+            const factor = await collectSecondFactor($('#passkeyAddCode').val());
+            const requestedAt = performance.now();
+            options = nzPasskey.unwrap(await nzPasskey.postJSON('/api/passkey', Object.assign({
+                operation: 'register-options',
+                name: $('#passkeyAddName').val(),
+                password: password,
+            }, factor)));
+            // Count from the request start so network time cannot extend the server challenge lifetime.
+            expiresAt = requestedAt + Math.max(0, (Number(options.timeout) || 300000) - 1000);
+        }
+        let credential;
+        try {
+            const remaining = expiresAt - performance.now();
+            if (remaining <= 0) {
+                throw new Error('通行密钥验证已过期，请重试');
+            }
+            credential = await nzPasskey.create(Object.assign({}, options, { timeout: remaining }));
+        } catch (err) {
+            if (err && err.name === 'NotAllowedError' && performance.now() < expiresAt) {
+                pendingPasskeyCreation = { options: options, expiresAt: expiresAt };
+            }
+            throw err;
+        }
+        pendingPasskeyCreation = null;
+        const resp = await nzPasskey.postJSON('/api/passkey', { operation: 'register', credential: credential });
+        if (resp.code != 200) {
+            throw new Error(resp.message);
+        }
+        passkeyAddModal.modal('hide');
+        $.suiAlert({
+            title: '',
+            description: resp.message || '{{tr "ModifiedSuccessfully"}}',
+            type: 'success',
+            time: '2',
+            position: 'top-center',
+        });
+        setTimeout(() => window.location.reload(), 600);
+    }
+
+    $('#passkeyAddConfirmBtn').on('click', function () {
+        withLoading($(this), addPasskey);
+    });
+    $('#passkeyAddName, #passkeyAddPassword, #passkeyAddCode').on('keydown', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            $('#passkeyAddConfirmBtn').trigger('click');
+        }
+    });
+
+    const passkeyDeleteModal = $('#passkeyDeleteModal');
+    let deletingPasskeyID = 0;
+    passkeyDeleteModal.modal({
+        closable: true,
+        onHidden: function () {
+            $('#passkeyDeleteCode').val('');
+            deletingPasskeyID = 0;
+        }
+    });
+
+    $('.passkey-delete-btn').on('click', function () {
+        deletingPasskeyID = Number($(this).data('id')) || 0;
+        $('#passkeyDeleteName').text($(this).data('name'));
+        passkeyDeleteModal.modal('show');
+    });
+
+    $('#passkeyDeleteConfirmBtn').on('click', function () {
+        const id = deletingPasskeyID;
+        withLoading($(this), function () {
+            return collectSecondFactor($('#passkeyDeleteCode').val())
+                .then((factor) => nzPasskey.postJSON('/api/passkey', Object.assign({ operation: 'delete', id: id }, factor)))
+                .then((resp) => {
+                    if (resp.code != 200) {
+                        throw new Error(resp.message);
+                    }
+                    // 通知当前浏览器同步移除设备上的这个通行密钥（不支持时静默跳过）
+                    const removed = resp.result || {};
+                    return nzPasskey.signalUnknown(removed.rpId, removed.credentialId).then(() => resp);
+                })
+                .then((resp) => {
+                    passkeyDeleteModal.modal('hide');
+                    $.suiAlert({
+                        title: '',
+                        description: resp.message || '{{tr "ModifiedSuccessfully"}}',
+                        type: 'success',
+                        time: '2',
+                        position: 'top-center',
+                    });
+                    setTimeout(() => window.location.reload(), 600);
+                });
+        });
+    });
+
     $('input[name=Admin]').popup({
         popup: '#adminListTip',
         on: 'focus',

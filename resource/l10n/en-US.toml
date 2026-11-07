@@ -1397,3 +1397,67 @@ other = "The following manual subscriptions are about to expire:"
 [SubscriptionExpirationReminderItem]
 one = "{{.Name}} (ID {{.ID}}, {{.Group}}) expires on {{.Date}}, {{.Days}} day remaining"
 other = "{{.Name}} (ID {{.ID}}, {{.Group}}) expires on {{.Date}}, {{.Days}} days remaining"
+
+[Passkey]
+other = "Passkeys"
+
+[PasskeyLogin]
+other = "Sign in with a passkey"
+
+[PasskeyVerify]
+other = "Verify with a passkey"
+
+[PasskeyVerifyAndSubmit]
+other = "Verify with a passkey and confirm"
+
+[PasskeyOr]
+other = "or"
+
+[PasskeyAdd]
+other = "Add passkey"
+
+[PasskeyAddPrompt]
+other = "After confirming, your browser will ask you to create a passkey with your fingerprint, face, device PIN or security key. The passkey is bound to the domain you are visiting."
+
+[PasskeyName]
+other = "Name"
+
+[PasskeyNamePlaceholder]
+other = "e.g. My phone (optional)"
+
+[PasskeyPasswordPlaceholder]
+other = "Enter the current administrator password"
+
+[PasskeyEmpty]
+other = "No passkeys yet"
+
+[PasskeyHint]
+other = "When two-factor authentication is on, a passkey can replace the authenticator code; when password sign-in is enabled, it can also be used to sign in without a password. A passkey is bound to the domain it was added on and requires HTTPS."
+
+[PasskeyOtherDomain]
+other = "other domain"
+
+[PasskeyAddedAt]
+other = "added"
+
+[PasskeyLastUsed]
+other = "last used"
+
+[PasskeyNeverUsed]
+other = "never"
+
+[PasskeyDelete]
+other = "Delete"
+
+[PasskeyDeleteTitle]
+other = "Delete passkey"
+
+[PasskeyDeleteConfirm]
+other = "Delete this passkey? All other signed-in sessions except this one will be signed out."
+
+[PasskeyCodeOptionalHint]
+other = "You can also leave the code empty and verify with an existing passkey after confirming."
+
+
+[PasskeyUnsupported]
+other = "Passkeys are not supported by this browser or address. Access the panel over HTTPS by domain name."

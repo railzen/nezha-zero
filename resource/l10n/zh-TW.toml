@@ -1395,3 +1395,67 @@ other = "以下手動訂閱即將到期："
 [SubscriptionExpirationReminderItem]
 one = "{{.Name}}（ID {{.ID}}，{{.Group}}）將於 {{.Date}} 到期，剩餘 {{.Days}} 天"
 other = "{{.Name}}（ID {{.ID}}，{{.Group}}）將於 {{.Date}} 到期，剩餘 {{.Days}} 天"
+
+[Passkey]
+other = "通行金鑰"
+
+[PasskeyLogin]
+other = "使用通行金鑰登入"
+
+[PasskeyVerify]
+other = "使用通行金鑰驗證"
+
+[PasskeyVerifyAndSubmit]
+other = "使用通行金鑰驗證並確認"
+
+[PasskeyOr]
+other = "或"
+
+[PasskeyAdd]
+other = "新增通行金鑰"
+
+[PasskeyAddPrompt]
+other = "確認後，瀏覽器會提示使用指紋、臉部、裝置 PIN 或安全金鑰建立通行金鑰。通行金鑰與目前存取的網域綁定。"
+
+[PasskeyName]
+other = "名稱"
+
+[PasskeyNamePlaceholder]
+other = "例如：我的手機（可留空）"
+
+[PasskeyPasswordPlaceholder]
+other = "請輸入目前的管理員密碼"
+
+[PasskeyEmpty]
+other = "尚未新增通行金鑰"
+
+[PasskeyHint]
+other = "開啟雙重驗證後，通行金鑰可代替動態驗證碼完成驗證；開啟密碼登入時，還可用於免密碼登入。通行金鑰與新增時存取的網域綁定，需透過 HTTPS 網域存取。"
+
+[PasskeyOtherDomain]
+other = "其他網域"
+
+[PasskeyAddedAt]
+other = "新增於"
+
+[PasskeyLastUsed]
+other = "最近使用"
+
+[PasskeyNeverUsed]
+other = "從未使用"
+
+[PasskeyDelete]
+other = "刪除"
+
+[PasskeyDeleteTitle]
+other = "刪除通行金鑰"
+
+[PasskeyDeleteConfirm]
+other = "確認刪除此通行金鑰？刪除後，除目前工作階段外的其他登入工作階段將被登出。"
+
+[PasskeyCodeOptionalHint]
+other = "也可以不填寫動態驗證碼，確認後使用已新增的通行金鑰驗證。"
+
+
+[PasskeyUnsupported]
+other = "目前瀏覽器或存取位址不支援通行金鑰，請使用 HTTPS 網域存取"

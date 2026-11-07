@@ -1388,3 +1388,67 @@ other = "Las siguientes suscripciones manuales están por vencer:"
 [SubscriptionExpirationReminderItem]
 one = "{{.Name}} (ID {{.ID}}, {{.Group}}) vence el {{.Date}}, queda {{.Days}} día"
 other = "{{.Name}} (ID {{.ID}}, {{.Group}}) vence el {{.Date}}, quedan {{.Days}} días"
+
+[Passkey]
+other = "Llaves de acceso"
+
+[PasskeyLogin]
+other = "Iniciar sesión con llave de acceso"
+
+[PasskeyVerify]
+other = "Verificar con llave de acceso"
+
+[PasskeyVerifyAndSubmit]
+other = "Verificar con llave de acceso y confirmar"
+
+[PasskeyOr]
+other = "o"
+
+[PasskeyAdd]
+other = "Añadir llave de acceso"
+
+[PasskeyAddPrompt]
+other = "Tras confirmar, el navegador le pedirá crear una llave de acceso con su huella, rostro, PIN del dispositivo o llave de seguridad. La llave queda vinculada al dominio que está visitando."
+
+[PasskeyName]
+other = "Nombre"
+
+[PasskeyNamePlaceholder]
+other = "p. ej. Mi teléfono (opcional)"
+
+[PasskeyPasswordPlaceholder]
+other = "Introduzca la contraseña de administrador actual"
+
+[PasskeyEmpty]
+other = "Aún no hay llaves de acceso"
+
+[PasskeyHint]
+other = "Con la autenticación en dos pasos activada, una llave de acceso puede sustituir el código de autenticación; con el inicio de sesión por contraseña activado, también permite iniciar sesión sin contraseña. Cada llave queda vinculada al dominio en que se añadió y requiere HTTPS."
+
+[PasskeyOtherDomain]
+other = "otro dominio"
+
+[PasskeyAddedAt]
+other = "añadida"
+
+[PasskeyLastUsed]
+other = "último uso"
+
+[PasskeyNeverUsed]
+other = "nunca"
+
+[PasskeyDelete]
+other = "Eliminar"
+
+[PasskeyDeleteTitle]
+other = "Eliminar llave de acceso"
+
+[PasskeyDeleteConfirm]
+other = "¿Eliminar esta llave de acceso? Se cerrarán todas las demás sesiones excepto la actual."
+
+[PasskeyCodeOptionalHint]
+other = "También puede dejar el código vacío y verificar con una llave de acceso existente tras confirmar."
+
+
+[PasskeyUnsupported]
+other = "Este navegador o dirección no admite llaves de acceso. Acceda al panel por HTTPS con un nombre de dominio."

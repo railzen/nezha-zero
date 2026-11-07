@@ -18,6 +18,10 @@
                     </div>
                 </div>
                 <button type="submit" class="ui fluid large nezha-primary-btn submit button">{{tr "TwoFactorGrantVerify"}}</button>
+                {{if .PasskeyEnabled}}
+                <div class="ui horizontal divider">{{tr "PasskeyOr"}}</div>
+                <button type="button" class="ui fluid large button nezha-passkey-btn passkey-verify"><i class="key icon"></i>{{tr "PasskeyVerify"}}</button>
+                {{end}}
             </form>
             <div class="ui message">
                 <p>{{tr "TwoFactorGrantPrompt"}}</p>
@@ -67,6 +71,32 @@
                 .fail(function (err) {
                     btn.removeClass("loading");
                     form.append($('<div class="ui negative message"></div>').text("网络错误：" + err.responseText));
+                });
+        });
+        // 通行密钥代替动态验证码完成授权，通过后同样以原参数重新提交
+        form.find(".passkey-verify.button").on("click", function () {
+            const btn = $(this);
+            if (btn.hasClass("loading")) return;
+            form.find(".message").remove();
+            btn.addClass("loading");
+            verifyTwoFactorGrantWithPasskey()
+                .then(function (resp) {
+                    if (resp.code == 200) {
+                        const resubmit = document.getElementById("twoFactorGrantResubmitForm");
+                        const csrf = document.createElement("input");
+                        csrf.type = "hidden";
+                        csrf.name = "_csrf";
+                        csrf.value = getCSRFToken();
+                        resubmit.appendChild(csrf);
+                        resubmit.submit();
+                        return;
+                    }
+                    btn.removeClass("loading");
+                    form.append($('<div class="ui negative message"></div>').text(resp.message));
+                })
+                .catch(function (err) {
+                    btn.removeClass("loading");
+                    form.append($('<div class="ui negative message"></div>').text(nzPasskey.errorMessage(err)));
                 });
         });
     })();

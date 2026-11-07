@@ -31,6 +31,8 @@ func CommonEnvironment(c *gin.Context, data map[string]interface{}) gin.H {
 	data["Themes"] = model.AvailableThemes(singleton.Conf.CompatAPIDisable, singleton.Conf.Site.Theme)
 	data["CustomCode"] = singleton.Conf.Site.CustomCode
 	data["CustomCodeDashboard"] = singleton.Conf.Site.CustomCodeDashboard
+	// 已添加通行密钥：可用于免密码登录，并在需要二次验证时代替动态验证码
+	data["PasskeyEnabled"] = singleton.PasskeyEnabled()
 	// 是否是管理页面
 	data["IsAdminPage"] = adminPage[data["MatchedPath"].(string)]
 	// 站点标题

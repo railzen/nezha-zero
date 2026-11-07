@@ -667,6 +667,139 @@ function requireTwoFactorGrant(callback) {
     });
 }
 
+// 通行密钥（WebAuthn）。服务端返回 base64url 编码的选项，浏览器 API 需要 ArrayBuffer；
+// 提交给服务端的结果再编码回 base64url JSON。
+const nzPasskey = (function () {
+  function toBuffer(value) {
+    const base64 = String(value).replace(/-/g, "+").replace(/_/g, "/");
+    const binary = atob(base64 + "===".slice((base64.length + 3) % 4));
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes.buffer;
+  }
+
+  function toBase64URL(buffer) {
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+
+  function decodeDescriptors(list) {
+    return (list || []).map(function (d) {
+      return Object.assign({}, d, { id: toBuffer(d.id) });
+    });
+  }
+
+  function supported() {
+    return !!(window.isSecureContext && window.PublicKeyCredential && navigator.credentials);
+  }
+
+  function postJSON(url, data) {
+    return Promise.resolve($.ajax({
+      url: url,
+      type: "POST",
+      contentType: "application/json",
+      data: JSON.stringify(data || {}),
+    }));
+  }
+
+  // 取出 {code, message, result: {publicKey}} 响应中的 WebAuthn 选项
+  function unwrap(resp) {
+    if (!resp || resp.code != 200 || !resp.result || !resp.result.publicKey) {
+      throw new Error((resp && resp.message) || "通行密钥请求失败");
+    }
+    return resp.result.publicKey;
+  }
+
+  function ensureSupported() {
+    if (!supported()) throw new Error("当前浏览器或访问地址不支持通行密钥，请使用 HTTPS 域名访问");
+  }
+
+  // 调用 navigator.credentials.get，返回可提交给服务端的断言 JSON 字符串
+  async function get(options) {
+    ensureSupported();
+    const publicKey = Object.assign({}, options, { challenge: toBuffer(options.challenge) });
+    if (options.allowCredentials) publicKey.allowCredentials = decodeDescriptors(options.allowCredentials);
+    const cred = await navigator.credentials.get({ publicKey: publicKey });
+    if (!cred) throw new Error("通行密钥操作已取消");
+    const r = cred.response;
+    return JSON.stringify({
+      id: cred.id,
+      rawId: toBase64URL(cred.rawId),
+      type: cred.type,
+      authenticatorAttachment: cred.authenticatorAttachment || undefined,
+      clientExtensionResults: cred.getClientExtensionResults ? cred.getClientExtensionResults() : {},
+      response: {
+        authenticatorData: toBase64URL(r.authenticatorData),
+        clientDataJSON: toBase64URL(r.clientDataJSON),
+        signature: toBase64URL(r.signature),
+        userHandle: r.userHandle ? toBase64URL(r.userHandle) : undefined,
+      },
+    });
+  }
+
+  // 调用 navigator.credentials.create，返回可提交给服务端的注册结果对象
+  async function create(options) {
+    ensureSupported();
+    const publicKey = Object.assign({}, options, {
+      challenge: toBuffer(options.challenge),
+      user: Object.assign({}, options.user, { id: toBuffer(options.user.id) }),
+      excludeCredentials: decodeDescriptors(options.excludeCredentials),
+    });
+    const cred = await navigator.credentials.create({ publicKey: publicKey });
+    if (!cred) throw new Error("通行密钥操作已取消");
+    const r = cred.response;
+    return {
+      id: cred.id,
+      rawId: toBase64URL(cred.rawId),
+      type: cred.type,
+      authenticatorAttachment: cred.authenticatorAttachment || undefined,
+      clientExtensionResults: cred.getClientExtensionResults ? cred.getClientExtensionResults() : {},
+      response: {
+        attestationObject: toBase64URL(r.attestationObject),
+        clientDataJSON: toBase64URL(r.clientDataJSON),
+        transports: r.getTransports ? r.getTransports() : [],
+      },
+    };
+  }
+
+  // 已登录会话的二次验证：返回断言 JSON 字符串，随敏感操作请求一并提交
+  function verify() {
+    try {
+      ensureSupported();
+    } catch (err) {
+      return Promise.reject(err);
+    }
+    return postJSON("/api/passkey", { operation: "verify-options" }).then(unwrap).then(get);
+  }
+
+  function errorMessage(err) {
+    if (err && err.name === "NotAllowedError") return "通行密钥操作已取消或超时";
+    if (err && err.name === "InvalidStateError") return "该认证器已添加过通行密钥";
+    if (err && err.name === "SecurityError") return "当前访问地址不支持通行密钥，请使用 HTTPS 域名访问";
+    if (err && err.responseText !== undefined) return "网络错误：" + (err.responseText || err.status);
+    return (err && err.message) || String(err);
+  }
+
+  // Signal API：通知浏览器（及背后的密码管理器）某个通行密钥已在服务端删除，由其移除或隐藏。
+  // 仅在设置页手动删除成功后调用；浏览器不支持、或凭据不属于当前域名（浏览器不允许跨域通知）时静默跳过。
+  // 始终返回成功的 Promise，结果不影响后续流程。
+  function signalUnknown(rpId, credentialId) {
+    try {
+      if (!rpId || !credentialId || rpId !== window.location.hostname ||
+        !window.PublicKeyCredential || typeof PublicKeyCredential.signalUnknownCredential !== "function") {
+        return Promise.resolve();
+      }
+      return PublicKeyCredential.signalUnknownCredential({ rpId: rpId, credentialId: credentialId }).catch(function () {});
+    } catch (err) {
+      return Promise.resolve();
+    }
+  }
+
+  return { supported: supported, postJSON: postJSON, unwrap: unwrap, get: get, create: create, verify: verify, signalUnknown: signalUnknown, errorMessage: errorMessage };
+})();
+
 function verifyTwoFactorGrant(code) {
   return $.ajax({
     url: "/api/totp",
@@ -676,6 +809,19 @@ function verifyTwoFactorGrant(code) {
   }).done(function (resp) {
     if (resp.code == 200) updateTwoFactorGrantState(resp.result);
   });
+}
+
+// 用通行密钥代替动态验证码完成敏感操作授权，返回与 verifyTwoFactorGrant 相同结构的响应
+function verifyTwoFactorGrantWithPasskey() {
+  return nzPasskey
+    .verify()
+    .then(function (assertion) {
+      return nzPasskey.postJSON("/api/passkey", { operation: "grant", passkey: assertion });
+    })
+    .then(function (resp) {
+      if (resp.code == 200) updateTwoFactorGrantState(resp.result);
+      return resp;
+    });
 }
 
 // openWindow 为 true 时，callback 以窗口名为参数，向该窗口提交以打开新页面
@@ -694,6 +840,48 @@ function showTwoFactorGrantModal(callback, openWindow) {
       e.preventDefault();
       btn.trigger("click");
     }
+  });
+  // 通行密钥代替动态验证码完成授权。通行密钥验证需要当前页面保持焦点，不预开窗口
+  const passkeyBtn = modal.find(".passkey-verify.button");
+  passkeyBtn.removeClass("loading");
+  passkeyBtn.off("click.twoFactorGrant").on("click.twoFactorGrant", function (e) {
+    e.preventDefault();
+    if (btn.hasClass("loading") || passkeyBtn.hasClass("loading")) {
+      return;
+    }
+    // 已验证但新窗口被拦截：本次点击是新的用户手势，直接打开
+    if (pendingOpen) {
+      callback("_blank");
+      modal.modal("hide");
+      return;
+    }
+    form.children(".message").remove();
+    passkeyBtn.addClass("loading");
+    verifyTwoFactorGrantWithPasskey()
+      .then(function (resp) {
+        if (resp.code != 200) {
+          form.append($('<div class="ui negative message"></div>').text(resp.message));
+          return;
+        }
+        if (!openWindow) {
+          verified = true;
+          modal.modal("hide");
+          return;
+        }
+        if (!navigator.userActivation || navigator.userActivation.isActive) {
+          callback("_blank");
+          modal.modal("hide");
+          return;
+        }
+        pendingOpen = true;
+        form.append($('<div class="ui positive message"></div>').text("验证已通过，请再次点击确认打开"));
+      })
+      .catch(function (err) {
+        form.append($('<div class="ui negative message"></div>').text(nzPasskey.errorMessage(err)));
+      })
+      .finally(function () {
+        passkeyBtn.removeClass("loading");
+      });
   });
   modal
     .modal({
@@ -822,6 +1010,31 @@ function issueNewApiToken(apiToken) {
   modal.find("input[name=Note]").val(apiToken ? apiToken.Note : null);
   modal.find("input[name=TwoFactorCode]").val("");
   showFormModal(".api.modal", "#apiForm", "/api/token", null, showIssuedApiToken);
+}
+
+// 用通行密钥代替动态验证码签发 API Token：断言写入隐藏字段后触发确认，
+// 表单在点击确认时同步读取，随后立即清空（断言只能使用一次）
+function issueNewApiTokenWithPasskey(button) {
+  const $btn = $(button);
+  const modal = $(".api.modal");
+  const field = modal.find("input[name=PasskeyAssertion]");
+  if ($btn.hasClass("loading")) return;
+  modal.find("form").children(".message").remove();
+  $btn.addClass("loading");
+  nzPasskey.verify()
+    .then(function (assertion) {
+      field.val(assertion);
+      modal.find(".nezha-primary-btn.button").trigger("click");
+    })
+    .catch(function (err) {
+      modal.find("form").append(
+        $('<div class="ui negative message"></div>').text(nzPasskey.errorMessage(err))
+      );
+    })
+    .finally(function () {
+      field.val("");
+      $btn.removeClass("loading");
+    });
 }
 
 function showIssuedApiToken(resp) {

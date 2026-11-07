@@ -30,6 +30,10 @@
                     <input type="text" name="TwoFactorCode" placeholder="{{tr "TwoFactorCodePlaceholder"}}" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,6)">
                 </div>
             </div>
+            {{if .PasskeyEnabled}}
+            <div class="ui horizontal divider">{{tr "PasskeyOr"}}</div>
+            <button type="button" class="ui fluid button nezha-passkey-btn passkey-verify"><i class="key icon"></i>{{tr "PasskeyVerify"}}</button>
+            {{end}}
         </form>
     </div>
     <div class="actions">
