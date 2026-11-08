@@ -2030,7 +2030,6 @@ func (ma *memberAPI) totp(c *gin.Context) {
 		Operation string `json:"operation"`
 		SetupID   string `json:"setupId"`
 		Code      string `json:"code"`
-		Passkey   string `json:"passkey"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusOK, model.Response{
@@ -2170,7 +2169,7 @@ func (ma *memberAPI) totp(c *gin.Context) {
 		}
 		// 关闭二次验证需先用当前 TOTP 码二次确认（修复会话被盗即可直接关闭 2FA 的缺口）。
 		// 与开启时的 confirm 一致，要求输入当前有效的双重验证码。
-		if req.Code == "" && req.Passkey == "" {
+		if req.Code == "" {
 			c.JSON(http.StatusOK, model.Response{
 				Code:    http.StatusBadRequest,
 				Message: "请输入当前双重验证码",
@@ -2185,7 +2184,7 @@ func (ma *memberAPI) totp(c *gin.Context) {
 			})
 			return
 		}
-		if message := verifySessionSecondFactor(c, req.Code, req.Passkey); message != "" {
+		if message := verifySessionTwoFactor(c, req.Code); message != "" {
 			audit.Record(c, audit.TypeSecurity, "Two-factor disable failed", "invalid two-factor code on unbind")
 			c.JSON(http.StatusOK, model.Response{
 				Code:    http.StatusBadRequest,

@@ -517,10 +517,6 @@
                 <input type="text" id="twoFactorDisableCode" placeholder="{{tr "TwoFactorCodePlaceholder"}}" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6">
             </div>
         </div>
-        {{if .PasskeyEnabled}}
-        <div class="ui horizontal divider">{{tr "PasskeyOr"}}</div>
-        <button type="button" class="ui fluid button nezha-passkey-btn" id="twoFactorDisablePasskeyBtn"><i class="key icon"></i>{{tr "PasskeyVerify"}}</button>
-        {{end}}
     </div>
     <div class="actions">
         <div class="ui cancel button">{{tr "Cancel"}}</div>
@@ -603,10 +599,6 @@
             </div>
             {{end}}
         </div>
-        {{if and .Conf.Site.TwoFactorSecret .PasskeyEnabled}}
-        <div class="ui horizontal divider">{{tr "PasskeyOr"}}</div>
-        <button type="button" class="ui fluid button nezha-passkey-btn" id="passkeyAddPasskeyBtn"><i class="key icon"></i>{{tr "PasskeyVerify"}}</button>
-        {{end}}
     </div>
     <div class="actions">
         <div class="ui cancel button">{{tr "Cancel"}}</div>
@@ -1107,28 +1099,6 @@
         });
     });
 
-    // 关闭双重验证：用通行密钥代替动态验证码
-    $('#twoFactorDisablePasskeyBtn').on('click', function () {
-        withLoading($(this), function () {
-            return nzPasskey.verify()
-                .then((assertion) => totpRequest({ operation: 'unbind', passkey: assertion }))
-                .then((resp) => {
-                    if (resp.code !== 200) {
-                        throw new Error(resp.message);
-                    }
-                    twoFactorDisableModal.modal('hide');
-                    $.suiAlert({
-                        title: '',
-                        description: resp.message || '{{tr "ModifiedSuccessfully"}}',
-                        type: 'success',
-                        time: '2',
-                        position: 'top-center',
-                    });
-                    setTimeout(() => window.location.reload(), 600);
-                });
-        });
-    });
-
     // 与 TOTP 一致：设置页只放入口按钮，列表、添加、删除都在弹窗内完成
     const passkeyManageModal = $('#passkeyManageModal');
     passkeyManageModal.modal({ closable: true });
@@ -1168,7 +1138,7 @@
         passkeyAddModal.modal('show');
     });
 
-    // secondFactor 返回本次添加使用的二次验证（动态验证码或通行密钥）
+    // secondFactor 返回本次添加使用的二次验证（只能是动态验证码，不能用已有通行密钥）
     async function addPasskey(secondFactor) {
         const pending = pendingPasskeyCreation;
         pendingPasskeyCreation = null;
@@ -1225,11 +1195,6 @@
             return addPasskey(function () {
                 return codeSecondFactor($('#passkeyAddCode').val());
             });
-        });
-    });
-    $('#passkeyAddPasskeyBtn').on('click', function () {
-        withLoading($(this), function () {
-            return addPasskey(passkeySecondFactor);
         });
     });
     $('#passkeyAddName, #passkeyAddPassword, #passkeyAddCode').on('keydown', function (e) {

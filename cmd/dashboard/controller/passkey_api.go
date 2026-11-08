@@ -78,11 +78,12 @@ func (ma *memberAPI) passkey(c *gin.Context) {
 			return
 		}
 		// 通行密钥可直接登录面板，属于持久凭据，且不会随改密码失效：
-		// 已开启密码登录时先校验当前管理员密码，防止被盗会话无声地植入后门；已启用双重验证时再完成二次验证
+		// 已开启密码登录时先校验当前管理员密码，防止被盗会话无声地植入后门；已启用双重验证时再完成二次验证。
+		// 添加只能用动态验证码完成二次验证，不能用已有通行密钥代替
 		if !ma.passkeyRequirePassword(c, req.Password) {
 			return
 		}
-		if !ma.passkeyRequireTwoFactor(c, req.Code, req.Passkey, "Passkey register failed") {
+		if !ma.passkeyRequireTwoFactor(c, req.Code, "", "Passkey register failed") {
 			return
 		}
 		creation, err := beginPasskeyRegistration(c, binding, user.Login, name)
