@@ -73,7 +73,7 @@ func (ma *memberAPI) passkey(c *gin.Context) {
 			return
 		}
 		// 通行密钥可直接登录面板，属于持久凭据，且不会随改密码失效：
-		// 已设置管理员密码时先校验当前密码，防止被盗会话无声地植入后门；已启用双重验证时再完成二次验证
+		// 已开启密码登录时先校验当前管理员密码，防止被盗会话无声地植入后门；已启用双重验证时再完成二次验证
 		if !ma.passkeyRequirePassword(c, req.Password) {
 			return
 		}
@@ -190,15 +190,15 @@ func (ma *memberAPI) passkeyRequireTwoFactor(c *gin.Context, code, passkeyAssert
 	return true
 }
 
-// passkeyRequirePassword 已设置管理员密码时校验当前密码；未通过时写入响应并返回 false。
-// 未设置密码（仅 OAuth 登录）时无从校验，直接放行。
+// passkeyRequirePassword 已开启密码登录时校验当前管理员密码；未通过时写入响应并返回 false。
+// 与登录页是否显示密码登录框的判断一致；未开启密码登录（仅 OAuth 登录）时直接放行。
 // 密码错误与动态验证码共用每会话试错计数，防止持有被盗会话的人借此持续猜密码。
 func (ma *memberAPI) passkeyRequirePassword(c *gin.Context, password string) bool {
 	const tooManyFailures = "验证错误次数过多，请重新登录后再试"
-	hash := singleton.Conf.Site.AdminPassword
-	if hash == "" {
+	if !singleton.Conf.PasswordLoginActive() {
 		return true
 	}
+	hash := singleton.Conf.Site.AdminPassword
 	if !allowAuthRateLimitedCheck(c) {
 		c.JSON(http.StatusOK, model.Response{Code: http.StatusTooManyRequests, Message: "请求过于频繁，请稍后再试"})
 		return false
@@ -333,7 +333,7 @@ func (oa *oauth2controller) passkeyLogin(c *gin.Context) {
 // passkeyPasswordlessLogin 通行密钥免密码登录。通行密钥注册时要求用户验证（指纹 / 面容 / PIN），
 // 单独即构成多因素，验证通过即视为已通过双重验证，直接发放会话，不再要求 TOTP。
 // 仅在开启密码登录时可用：此时添加通行密钥必须验证管理员密码；未开启密码登录（仅 OAuth）时
-// 添加无法验证密码，通行密钥只能代替 TOTP 完成二次验证，避免被盗会话植入可直接登录的后门。
+// 添加不验证密码，通行密钥只能代替 TOTP 完成二次验证，避免被盗会话植入可直接登录的后门。
 func (oa *oauth2controller) passkeyPasswordlessLogin(c *gin.Context) {
 	if !allowAuthRateLimitedCheck(c) {
 		c.JSON(http.StatusOK, model.Response{Code: http.StatusTooManyRequests, Message: "请求过于频繁，请稍后再试"})

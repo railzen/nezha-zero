@@ -583,7 +583,7 @@
                 <label>{{tr "PasskeyName"}}</label>
                 <input type="text" id="passkeyAddName" maxlength="32" placeholder="{{tr "PasskeyNamePlaceholder"}}" autocomplete="off">
             </div>
-            {{if .Conf.Site.AdminPassword}}
+            {{if .Conf.PasswordLoginActive}}
             <div class="field">
                 <label>{{tr "AdminPassword"}}</label>
                 <input type="password" id="passkeyAddPassword" placeholder="{{tr "PasskeyPasswordPlaceholder"}}" autocomplete="current-password" data-lpignore="true" data-1p-ignore data-bwignore>
@@ -641,6 +641,8 @@
     }
 
     const hasAdminPassword = {{if .Conf.Site.AdminPassword}}true{{else}}false{{end}};
+    // 添加通行密钥是否需要验证管理员密码：与登录页是否显示密码登录框一致
+    const passkeyPasswordRequired = {{if .Conf.PasswordLoginActive}}true{{else}}false{{end}};
     const twoFactorEnabled = {{if .Conf.Site.TwoFactorSecret}}true{{else}}false{{end}};
 
     // 安全敏感字段的初始值：变更时需要二次验证（与后端校验保持一致）
@@ -1165,9 +1167,9 @@
         let options = pending && performance.now() < pending.expiresAt ? pending.options : null;
         let expiresAt = options ? pending.expiresAt : 0;
         if (!options) {
-            // 已设置管理员密码时必须输入当前密码；先于二次验证检查，避免密码漏填时白白调起一次通行密钥验证
+            // 已开启密码登录时必须输入当前密码；先于二次验证检查，避免密码漏填时白白调起一次通行密钥验证
             const password = $('#passkeyAddPassword').val() || '';
-            if (hasAdminPassword && !password) {
+            if (passkeyPasswordRequired && !password) {
                 $('#passkeyAddPassword').focus();
                 throw new Error('{{tr "PasskeyPasswordPlaceholder"}}');
             }
