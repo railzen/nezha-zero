@@ -277,6 +277,8 @@ func (oa *oauth2controller) passkeyLoginOptions(c *gin.Context) {
 		c.JSON(http.StatusOK, model.Response{Code: http.StatusForbidden, Message: "未添加通行密钥"})
 		return
 	}
+	// 请求体只有可选的 ticket，未登录即可调用，单独限制大小
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, passkeyOptionsMaxBodyBytes)
 	var req struct {
 		Ticket string `json:"ticket"`
 	}

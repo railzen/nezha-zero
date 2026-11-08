@@ -32,7 +32,9 @@ const (
 	passkeyMaxNameRunes = 32
 	// passkeyMaxPayloadBytes 客户端回传的断言 / 证明 JSON 的最大字节数。
 	passkeyMaxPayloadBytes = 64 << 10
-	passkeyUserHandleBytes = 32
+	// passkeyOptionsMaxBodyBytes /passkeyinfo 请求体（仅含可选的 ticket）的最大字节数。
+	passkeyOptionsMaxBodyBytes = 4 << 10
+	passkeyUserHandleBytes     = 32
 )
 
 // passkeyPurpose 一次 WebAuthn 仪式的用途。challenge 只能用于签发时声明的用途和绑定对象。
