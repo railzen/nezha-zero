@@ -1457,3 +1457,9 @@ other = "Delete this passkey? All other signed-in sessions except this one will 
 
 [PasskeyUnsupported]
 other = "Passkeys are not supported by this browser or address. Access the panel over HTTPS by domain name."
+
+[PasskeyPasswordChangeHint]
+other = "Existing passkeys stay valid after the admin password is changed. If you are changing it because the password was leaked, review the passkey list and delete any passkey you don't recognize."
+
+[PasskeyReview]
+other = "Review passkeys"

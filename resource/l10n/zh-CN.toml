@@ -1455,3 +1455,9 @@ other = "确认删除该通行密钥？删除后，除当前会话外的其他�
 
 [PasskeyUnsupported]
 other = "当前浏览器或访问地址不支持通行密钥，请使用 HTTPS 域名访问"
+
+[PasskeyPasswordChangeHint]
+other = "已添加的通行密钥不会随管理员密码修改而失效。如果是因为密码泄露而修改，请检查通行密钥列表，删除不认识的通行密钥。"
+
+[PasskeyReview]
+other = "查看通行密钥"

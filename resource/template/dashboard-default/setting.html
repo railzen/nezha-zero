@@ -274,6 +274,12 @@
                         <input type="password" id="adminPasswordConfirmInput" placeholder="{{tr "AdminPasswordConfirmPlaceholder"}}" autocomplete="off" autocapitalize="off" spellcheck="false" readonly onfocus="this.removeAttribute('readonly');" data-lpignore="true" data-1p-ignore data-bwignore>
                     </div>
                     <div class="admin-password-prompt" id="adminPasswordConfirmPrompt" role="alert"></div>
+                    {{if .Passkeys}}
+                    <div class="ui small yellow message" id="passkeyPasswordChangeHint" style="display: none;">
+                        <i class="key icon"></i>{{tr "PasskeyPasswordChangeHint"}}
+                        <a href="#" id="passkeyPasswordChangeReview">{{tr "PasskeyReview"}}</a>
+                    </div>
+                    {{end}}
                 </div>
                 <div class="field">
                     <label>{{tr "AccessPassword"}}</label>
@@ -1118,6 +1124,15 @@
     const passkeyManageModal = $('#passkeyManageModal');
     passkeyManageModal.modal({ closable: true });
     $('#passkeyManageBtn').on('click', function () {
+        passkeyManageModal.modal('show');
+    });
+
+    // 修改管理员密码时提示检查通行密钥：通行密钥不随密码修改失效，密码泄露时可能已被添加了不认识的通行密钥
+    $('#adminPasswordInput').on('input', function () {
+        $('#passkeyPasswordChangeHint').toggle(!isAdminPasswordUnchanged($(this).val()));
+    });
+    $('#passkeyPasswordChangeReview').on('click', function (e) {
+        e.preventDefault();
         passkeyManageModal.modal('show');
     });
 

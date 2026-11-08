@@ -1448,3 +1448,9 @@ other = "¿Eliminar esta llave de acceso? Se cerrarán todas las demás sesiones
 
 [PasskeyUnsupported]
 other = "Este navegador o dirección no admite llaves de acceso. Acceda al panel por HTTPS con un nombre de dominio."
+
+[PasskeyPasswordChangeHint]
+other = "Las llaves de acceso existentes siguen siendo válidas tras cambiar la contraseña de administrador. Si la cambia porque se filtró, revise la lista de llaves de acceso y elimine las que no reconozca."
+
+[PasskeyReview]
+other = "Revisar llaves de acceso"

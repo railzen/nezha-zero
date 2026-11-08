@@ -1455,3 +1455,9 @@ other = "確認刪除此通行金鑰？刪除後，除目前工作階段外的�
 
 [PasskeyUnsupported]
 other = "目前瀏覽器或存取位址不支援通行金鑰，請使用 HTTPS 網域存取"
+
+[PasskeyPasswordChangeHint]
+other = "已新增的通行金鑰不會隨管理員密碼修改而失效。若是因密碼外洩而修改，請檢查通行金鑰清單，刪除不認識的通行金鑰。"
+
+[PasskeyReview]
+other = "查看通行金鑰"
