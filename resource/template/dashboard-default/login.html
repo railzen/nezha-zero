@@ -252,19 +252,18 @@
     const passwordField = document.getElementById('passwordInput');
     const originalPassword = passwordField.value;
     const submitBtn = this.querySelector('button[type="submit"]');
+    if (submitBtn.classList.contains('loading')) return;
 
     if (!originalPassword || originalPassword.length < 6) {
       showError('密码至少需要6位');
       return;
     }
 
-    submitBtn.disabled = true;
-    const originalBtnText = submitBtn.textContent;
-    submitBtn.textContent = 'Processing...';
+    // 与通行密钥登录按钮一致：提交中显示旋转加载圈，并忽略重复提交
+    submitBtn.classList.add('loading');
 
     const restoreBtn = () => {
-      submitBtn.disabled = false;
-      submitBtn.textContent = originalBtnText;
+      submitBtn.classList.remove('loading');
     };
 
     // 每次提交前动态获取一次性 Challenge 和 RSA 公钥
