@@ -551,6 +551,10 @@
     <div class="header">{{tr "Passkey"}}</div>
     <div class="content">
         <p class="passkey-hint">{{tr "PasskeyHint"}}</p>
+        {{/* 仅 OAuth 登录且未开启双重验证时，添加通行密钥没有任何可校验的因素，须先开启双重验证；已有的仍可删除 */}}
+        {{if not (or .Conf.PasswordLoginActive .Conf.Site.TwoFactorSecret)}}
+        <div class="ui warning message">{{tr "PasskeyAddRequireTwoFactor"}}</div>
+        {{end}}
         <div class="passkey-list">
             {{range .Passkeys}}
             <div class="passkey-item">
@@ -571,7 +575,9 @@
     </div>
     <div class="actions">
         <div class="ui cancel button">{{tr "Cancel"}}</div>
+        {{if or .Conf.PasswordLoginActive .Conf.Site.TwoFactorSecret}}
         <div class="ui nezha-primary-btn button" id="passkeyAddBtn"><i class="add icon"></i>{{tr "PasskeyAdd"}}</div>
+        {{end}}
     </div>
 </div>
 <div class="ui small modal" id="passkeyAddModal">

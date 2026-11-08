@@ -1454,3 +1454,6 @@ other = "Las llaves de acceso existentes siguen siendo válidas tras cambiar la 
 
 [PasskeyReview]
 other = "Revisar llaves de acceso"
+
+[PasskeyAddRequireTwoFactor]
+other = "Cuando solo está activado el inicio de sesión con OAuth, active la autenticación en dos pasos antes de añadir una llave de acceso."

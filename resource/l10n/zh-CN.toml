@@ -1461,3 +1461,6 @@ other = "已添加的通行密钥不会随管理员密码修改而失效。如�
 
 [PasskeyReview]
 other = "查看通行密钥"
+
+[PasskeyAddRequireTwoFactor]
+other = "仅使用 OAuth 登录时，需先开启双重验证才能添加通行密钥。"

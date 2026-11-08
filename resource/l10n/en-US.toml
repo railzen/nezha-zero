@@ -1463,3 +1463,6 @@ other = "Existing passkeys stay valid after the admin password is changed. If yo
 
 [PasskeyReview]
 other = "Review passkeys"
+
+[PasskeyAddRequireTwoFactor]
+other = "When only OAuth sign-in is enabled, turn on two-factor authentication before adding a passkey."

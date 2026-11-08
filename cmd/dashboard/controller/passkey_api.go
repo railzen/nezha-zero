@@ -67,6 +67,11 @@ func (ma *memberAPI) passkey(c *gin.Context) {
 		ma.passkeyGrant(c, req.Passkey)
 
 	case "register-options":
+		// 仅 OAuth 登录且未开启双重验证时没有可校验的因素，被盗会话可无声植入通行密钥，须先开启双重验证
+		if !singleton.Conf.PasswordLoginActive() && !singleton.Conf.TwoFactorActive() {
+			c.JSON(http.StatusOK, model.Response{Code: http.StatusForbidden, Message: "仅使用 OAuth 登录时，需先开启双重验证才能添加通行密钥"})
+			return
+		}
 		name, message := normalizePasskeyName(req.Name)
 		if message != "" {
 			c.JSON(http.StatusOK, model.Response{Code: http.StatusBadRequest, Message: message})
@@ -88,6 +93,10 @@ func (ma *memberAPI) passkey(c *gin.Context) {
 		c.JSON(http.StatusOK, model.Response{Code: http.StatusOK, Result: creation})
 
 	case "register":
+		if !singleton.Conf.PasswordLoginActive() && !singleton.Conf.TwoFactorActive() {
+			c.JSON(http.StatusOK, model.Response{Code: http.StatusForbidden, Message: "仅使用 OAuth 登录时，需先开启双重验证才能添加通行密钥"})
+			return
+		}
 		row, err := finishPasskeyRegistration(c, binding, req.Credential)
 		if err != nil {
 			audit.Record(c, audit.TypeSecurity, "Passkey register failed", err.Error())
