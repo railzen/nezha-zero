@@ -1784,6 +1784,9 @@ func (ma *memberAPI) updateSetting(c *gin.Context) {
 		loginErr = "至少需要启用一种登录方式"
 	case !disablePasswordLogin && adminPassword == "":
 		loginErr = "启用密码登录时必须设置管理员密码"
+	// 与启动时读取配置的校验一致：OAuth 未配置完整却启用 OAuth 登录，保存后下次启动会直接退出
+	case !disableOauthLogin && (singleton.Conf.Oauth2.Type == "" || singleton.Conf.Oauth2.ClientID == "" || singleton.Conf.Oauth2.ClientSecret == ""):
+		loginErr = "未配置 OAuth，无法启用 OAuth 登录"
 	}
 	if loginErr != "" {
 		c.JSON(http.StatusOK, model.Response{
