@@ -134,6 +134,59 @@ body {
   background-color: #022288 !important; /* 进一步加深 */
 }
 
+/* 通行密钥按钮：深色实心（暗色主题反色为浅底深字），与蓝色主按钮区分开 */
+.ui.button.nezha-passkey-btn {
+  background-color: #1b1c1d !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+
+.ui.button.nezha-passkey-btn:hover,
+.ui.button.nezha-passkey-btn:focus {
+  background-color: #333537 !important;
+}
+
+.ui.button.nezha-passkey-btn:active {
+  background-color: #000 !important;
+}
+
+.ui.button.nezha-passkey-btn > .icon {
+  color: inherit !important;
+  opacity: 1 !important;
+}
+
+.ui.loading.button.nezha-passkey-btn {
+  color: transparent !important;
+}
+
+html[nz-theme='dark'] .ui.button.nezha-passkey-btn {
+  background-color: #e8e8e8 !important;
+  color: #111 !important;
+}
+
+html[nz-theme='dark'] .ui.button.nezha-passkey-btn:hover,
+html[nz-theme='dark'] .ui.button.nezha-passkey-btn:focus {
+  background-color: #f5f5f5 !important;
+}
+
+html[nz-theme='dark'] .ui.button.nezha-passkey-btn:active {
+  background-color: #d4d4d4 !important;
+}
+
+html[nz-theme='dark'] .ui.loading.button.nezha-passkey-btn {
+  color: transparent !important;
+}
+
+/* 浅底上默认的白色加载圈看不见，改为深色 */
+html[nz-theme='dark'] .ui.loading.button.nezha-passkey-btn:after {
+  border-color: #111 transparent transparent !important;
+}
+
+/* 登录页：通行密钥登录按钮与上方登录表单的间距。放在头部样式表里，避免页面先渲染出两个按钮挨在一起 */
+.login form + .passkey-login-btn {
+  margin-top: 1em;
+}
+
 .nezha-primary-font {
   color: #0338d6 !important;
 }

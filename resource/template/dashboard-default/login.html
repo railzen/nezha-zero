@@ -48,6 +48,9 @@
         </div>
         <button type="submit" class="ui fluid large nezha-primary-btn button">{{tr "Login"}}</button>
       </form>
+      {{if .PasskeyEnabled}}
+      <button type="button" id="passkeyLoginBtn" class="ui fluid large button nezha-passkey-btn passkey-login-btn"><i class="key icon"></i>{{tr "PasskeyLogin"}}</button>
+      {{end}}
 
 
       {{if and .PasswordEnabled .OauthEnabled}}
@@ -106,6 +109,10 @@
           >
         </div>
       </div>
+      {{if .PasskeyEnabled}}
+      <div class="ui horizontal divider">{{tr "PasskeyOr"}}</div>
+      <button type="button" id="twoFactorPasskeyBtn" class="ui fluid button nezha-passkey-btn"><i class="key icon"></i>{{tr "PasskeyVerify"}}</button>
+      {{end}}
     </form>
     {{end}}
     {{if .SecondFactorError}}
@@ -159,6 +166,80 @@
         }
       });
     }
+
+    // 通行密钥二次验证：challenge 与本次登录的 ticket 绑定，断言随表单提交到 /auth/passkey
+    const passkeyBtn = document.getElementById('twoFactorPasskeyBtn');
+    if (form && passkeyBtn) {
+      passkeyBtn.addEventListener('click', async function() {
+        if (passkeyBtn.classList.contains('loading')) return;
+        passkeyBtn.classList.add('loading');
+        try {
+          const ticket = form.querySelector('input[name=ticket]').value;
+          const options = nzPasskey.unwrap(await nzPasskey.postJSON('/passkeyinfo', { ticket: ticket }));
+          const assertion = await nzPasskey.get(options);
+          const passkeyForm = document.createElement('form');
+          passkeyForm.method = 'post';
+          passkeyForm.action = '/auth/passkey';
+          passkeyForm.hidden = true;
+          const csrfMatch = document.cookie.match(/(^| )nz-csrf=([^;]+)/);
+          [['ticket', ticket], ['passkey', assertion], ['_csrf', csrfMatch ? decodeURIComponent(csrfMatch[2]) : '']].forEach(function(pair) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = pair[0];
+            input.value = pair[1];
+            passkeyForm.appendChild(input);
+          });
+          document.body.appendChild(passkeyForm);
+          passkeyForm.submit();
+        } catch (err) {
+          passkeyBtn.classList.remove('loading');
+          $.suiAlert({
+            title: '登陆失败',
+            description: nzPasskey.errorMessage(err),
+            type: 'error',
+            time: '3',
+            position: 'top-center',
+          });
+        }
+      });
+    }
+  })();
+</script>
+{{end}}
+{{if and .PasskeyEnabled .PasswordEnabled (not .SecondFactorMode)}}
+<script>
+  // 通行密钥免密码登录：可发现凭据，无需输入用户名
+  (function() {
+    const btn = document.getElementById('passkeyLoginBtn');
+    if (!btn) return;
+    btn.addEventListener('click', async function() {
+      if (btn.classList.contains('loading')) return;
+      btn.classList.add('loading');
+      try {
+        const options = nzPasskey.unwrap(await nzPasskey.postJSON('/passkeyinfo', {}));
+        const assertion = await nzPasskey.get(options);
+        const resp = await Promise.resolve($.ajax({
+          url: '/auth/passkey',
+          type: 'POST',
+          contentType: 'application/json',
+          data: assertion,
+        }));
+        if (resp.code == 200) {
+          window.location.href = '/';
+          return;
+        }
+        throw new Error(resp.message || '登录失败，请稍后重试');
+      } catch (err) {
+        btn.classList.remove('loading');
+        $.suiAlert({
+          title: '登陆失败',
+          description: nzPasskey.errorMessage(err),
+          type: 'error',
+          time: '3',
+          position: 'top-center',
+        });
+      }
+    });
   })();
 </script>
 {{end}}

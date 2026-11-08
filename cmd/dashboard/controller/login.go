@@ -123,6 +123,8 @@ func (oa *oauth2controller) serve() {
 	oa.r.GET("/oauth2/login", oa.login)
 	oa.r.GET("/oauth2/callback", oa.callback)
 	oa.r.POST("/auth/2fa", oa.twoFactorVerify)
+	oa.r.POST("/passkeyinfo", oa.passkeyLoginOptions)
+	oa.r.POST("/auth/passkey", oa.passkeyLogin)
 	oa.r.POST("/auth", oa.passwordLogin)
 	oa.r.GET("/authinfo", oa.newChallenge)
 }

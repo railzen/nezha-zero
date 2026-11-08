@@ -1395,3 +1395,72 @@ other = "以下手动订阅即将到期："
 [SubscriptionExpirationReminderItem]
 one = "{{.Name}}（ID {{.ID}}，{{.Group}}）将于 {{.Date}} 到期，剩余 {{.Days}} 天"
 other = "{{.Name}}（ID {{.ID}}，{{.Group}}）将于 {{.Date}} 到期，剩余 {{.Days}} 天"
+
+[Passkey]
+other = "通行密钥"
+
+[PasskeyLogin]
+other = "使用通行密钥登录"
+
+[PasskeyVerify]
+other = "使用通行密钥验证"
+
+[PasskeyVerifyAndSubmit]
+other = "使用通行密钥验证并确认"
+
+[PasskeyOr]
+other = "或"
+
+[PasskeyAdd]
+other = "添加通行密钥"
+
+[PasskeyAddPrompt]
+other = "确认后，浏览器会提示使用指纹、面容、设备 PIN 或安全密钥创建通行密钥。通行密钥与当前访问的域名绑定。"
+
+[PasskeyName]
+other = "名称"
+
+[PasskeyNamePlaceholder]
+other = "例如：我的手机（可留空）"
+
+[PasskeyPasswordPlaceholder]
+other = "请输入当前管理员密码"
+
+[PasskeyEmpty]
+other = "尚未添加通行密钥"
+
+[PasskeyHint]
+other = "开启双重验证后，通行密钥可代替动态验证码完成验证；开启密码登录时，还可用于免密码登录。通行密钥与添加时访问的域名绑定，需通过 HTTPS 域名访问。"
+
+[PasskeyOtherDomain]
+other = "其他域名"
+
+[PasskeyAddedAt]
+other = "添加于"
+
+[PasskeyLastUsed]
+other = "最近使用"
+
+[PasskeyNeverUsed]
+other = "从未使用"
+
+[PasskeyDelete]
+other = "删除"
+
+[PasskeyDeleteTitle]
+other = "删除通行密钥"
+
+[PasskeyDeleteConfirm]
+other = "确认删除该通行密钥？删除后，除当前会话外的其他登录会话将被注销。"
+
+[PasskeyUnsupported]
+other = "当前浏览器或访问地址不支持通行密钥，请使用 HTTPS 域名访问"
+
+[PasskeyPasswordChangeHint]
+other = "已添加的通行密钥不会随管理员密码修改而失效。如果是因为密码泄露而修改，请检查通行密钥列表，删除不认识的通行密钥。"
+
+[PasskeyReview]
+other = "查看通行密钥"
+
+[PasskeyAddRequireTwoFactor]
+other = "仅使用 OAuth 登录时，需先开启双重验证才能添加通行密钥。"

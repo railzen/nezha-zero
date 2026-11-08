@@ -69,6 +69,7 @@ func (ma *memberAPI) serve() {
 	wr.POST("/setting", ma.updateSetting)
 	wr.GET("/totp", ma.totpStatus)
 	wr.POST("/totp", ma.totp)
+	wr.POST("/passkey", ma.passkey)
 	wr.POST("/token", ma.issueNewToken)
 	wr.GET("/token", ma.getToken)
 	wr.GET("/log", ma.listLogs)
@@ -117,8 +118,9 @@ func (ma *memberAPI) getToken(c *gin.Context) {
 }
 
 type TokenForm struct {
-	Note          string
-	TwoFactorCode string
+	Note             string
+	TwoFactorCode    string
+	PasskeyAssertion string
 }
 
 // issueNewToken 生成新的 token
@@ -143,7 +145,7 @@ func (ma *memberAPI) issueNewToken(c *gin.Context) {
 			})
 			return
 		}
-		if message := verifySessionTwoFactor(c, tf.TwoFactorCode); message != "" {
+		if message := verifySessionSecondFactor(c, tf.TwoFactorCode, tf.PasskeyAssertion); message != "" {
 			audit.Record(c, audit.TypeSecurity, "API token issue failed", "invalid two-factor code")
 			c.JSON(http.StatusOK, model.Response{
 				Code:    http.StatusBadRequest,
@@ -1609,6 +1611,7 @@ type settingForm struct {
 	Cover                           uint8
 	Password                        string
 	TwoFactorCode                   string
+	PasskeyAssertion                string
 	UseExternalGeoIP                string
 	EnableIPChangeNotification      string
 	EnablePlainIPInNotification     string
@@ -1753,7 +1756,7 @@ func (ma *memberAPI) updateSetting(c *gin.Context) {
 			})
 			return
 		}
-		if message := verifySessionTwoFactor(c, sf.TwoFactorCode); message != "" {
+		if message := verifySessionSecondFactor(c, sf.TwoFactorCode, sf.PasskeyAssertion); message != "" {
 			auditReason := "Admin password change failed"
 			if !passwordChanged {
 				auditReason = "Admin security setting change failed"
@@ -1920,6 +1923,7 @@ func (ma *memberAPI) updateSetting(c *gin.Context) {
 			singleton.DB.Unscoped().Where("super_admin = ? AND login IN ?", true, removedAdmins).Delete(&model.User{})
 			audit.Record(c, audit.TypeAuth, "Logout", "sessions revoked for removed admins: "+strings.Join(removedAdmins, ", "))
 		}
+		deletePasskeysOutsideAdmins(c, keep)
 	}
 	// 更新系统语言
 	singleton.InitLocalizer()
@@ -2026,6 +2030,7 @@ func (ma *memberAPI) totp(c *gin.Context) {
 		Operation string `json:"operation"`
 		SetupID   string `json:"setupId"`
 		Code      string `json:"code"`
+		Passkey   string `json:"passkey"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusOK, model.Response{
@@ -2165,7 +2170,7 @@ func (ma *memberAPI) totp(c *gin.Context) {
 		}
 		// 关闭二次验证需先用当前 TOTP 码二次确认（修复会话被盗即可直接关闭 2FA 的缺口）。
 		// 与开启时的 confirm 一致，要求输入当前有效的双重验证码。
-		if req.Code == "" {
+		if req.Code == "" && req.Passkey == "" {
 			c.JSON(http.StatusOK, model.Response{
 				Code:    http.StatusBadRequest,
 				Message: "请输入当前双重验证码",
@@ -2180,7 +2185,7 @@ func (ma *memberAPI) totp(c *gin.Context) {
 			})
 			return
 		}
-		if message := verifySessionTwoFactor(c, req.Code); message != "" {
+		if message := verifySessionSecondFactor(c, req.Code, req.Passkey); message != "" {
 			audit.Record(c, audit.TypeSecurity, "Two-factor disable failed", "invalid two-factor code on unbind")
 			c.JSON(http.StatusOK, model.Response{
 				Code:    http.StatusBadRequest,

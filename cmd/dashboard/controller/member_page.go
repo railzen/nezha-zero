@@ -491,6 +491,7 @@ func (mp *memberPage) setting(c *gin.Context) {
 		}
 		geoIPUpdatedAt = geoip.UpdatedAt().In(loc).Format("2006-01-02 15:04:05")
 	}
+	passkeys := listPasskeyViews(c)
 	_, currencyRatesUpdatedAt, _ := singleton.CurrencyRateSnapshot()
 	currencyUsage, currencyUsageAvailable, _ := singleton.CurrencyUsageSnapshot()
 	c.HTML(http.StatusOK, "dashboard-"+singleton.Conf.Site.DashboardTheme+"/setting", mygin.CommonEnvironment(c, gin.H{
@@ -504,6 +505,8 @@ func (mp *memberPage) setting(c *gin.Context) {
 		"CurrencyUsageAvailable": currencyUsageAvailable,
 		"CurrencyUsageUsed":      currencyUsage.MonthlyUsed,
 		"CurrencyUsageLimit":     currencyUsage.MonthlyLimit,
+		"Passkeys":               passkeys,
+		"PasskeyCount":           len(passkeys),
 	}))
 }
 
