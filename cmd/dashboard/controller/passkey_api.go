@@ -99,7 +99,7 @@ func (ma *memberAPI) passkey(c *gin.Context) {
 		}
 		row, err := finishPasskeyRegistration(c, binding, req.Credential)
 		if err != nil {
-			audit.Record(c, audit.TypeSecurity, "Passkey register failed", err.Error())
+			audit.Record(c, audit.TypeSecurity, "Passkey register failed", "passkey registration failed")
 			c.JSON(http.StatusOK, model.Response{Code: http.StatusBadRequest, Message: err.Error()})
 			return
 		}
@@ -241,7 +241,7 @@ func normalizePasskeyName(name string) (string, string) {
 		return r
 	}, name))
 	if name == "" {
-		return "通行密钥 " + time.Now().In(singleton.Loc).Format("2006-01-02 15:04"), ""
+		return "Passkey " + time.Now().In(singleton.Loc).Format("2006-01-02 15:04"), ""
 	}
 	if utf8.RuneCountInString(name) > passkeyMaxNameRunes {
 		return "", fmt.Sprintf("名称不能超过 %d 个字符", passkeyMaxNameRunes)
@@ -377,7 +377,7 @@ func (oa *oauth2controller) passkeyPasswordlessLogin(c *gin.Context) {
 	}
 	row, err := finishPasskeyAssertion(c, string(payload), passkeyPurposeLogin, "")
 	if err != nil {
-		audit.Record(c, audit.TypeAuth, "Passkey login failed", err.Error())
+		audit.Record(c, audit.TypeAuth, "Passkey login failed", "passkey verification failed")
 		c.JSON(http.StatusOK, model.Response{Code: http.StatusForbidden, Message: err.Error()})
 		return
 	}

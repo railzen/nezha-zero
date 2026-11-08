@@ -253,7 +253,7 @@ func beginPasskeyAssertion(c *gin.Context, purpose passkeyPurpose, binding strin
 		return nil, passkeyFail("读取通行密钥失败", err)
 	}
 	if len(creds) == 0 {
-		return nil, errors.New("当前域名下没有可用的通行密钥")
+		return nil, errors.New("通行密钥登陆失败")
 	}
 
 	var (
@@ -314,7 +314,7 @@ func finishPasskeyAssertion(c *gin.Context, payload string, purpose passkeyPurpo
 		}
 	}
 	if matched == nil {
-		return nil, passkeyFail("当前域名下没有可用的通行密钥", errors.New("unknown credential id"))
+		return nil, passkeyFail("通行密钥登陆失败", errors.New("unknown credential id"))
 	}
 	// 每次使用都以当前管理员名单为准，不能依赖设置页删除凭据成功。
 	if !isConfiguredAdmin(matched.UserLogin) {
