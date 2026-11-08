@@ -700,6 +700,8 @@ const nzPasskey = (function () {
       url: url,
       type: "POST",
       contentType: "application/json",
+      // 显式携带 CSRF 头：密码登录后二次验证页经 document.write 渲染，重新加载的 jQuery 没有 $.ajaxSetup 的全局设置
+      headers: { "X-CSRF-Token": getCSRFToken() },
       data: JSON.stringify(data || {}),
     }));
   }
