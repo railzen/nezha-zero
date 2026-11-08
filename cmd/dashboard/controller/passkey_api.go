@@ -300,8 +300,18 @@ func (oa *oauth2controller) passkeyLoginOptions(c *gin.Context) {
 	var req struct {
 		Ticket string `json:"ticket"`
 	}
-	// 空请求体即免密码登录，忽略解析错误
-	_ = c.ShouldBindJSON(&req)
+	// 空请求体即免密码登录；非空请求体必须是完整、合法的 JSON。
+	payload, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		c.JSON(http.StatusOK, model.Response{Code: http.StatusBadRequest, Message: "请求错误"})
+		return
+	}
+	if len(bytes.TrimSpace(payload)) != 0 {
+		if err := json.Unmarshal(payload, &req); err != nil {
+			c.JSON(http.StatusOK, model.Response{Code: http.StatusBadRequest, Message: "请求错误"})
+			return
+		}
+	}
 
 	purpose, binding := passkeyPurposeLogin, ""
 	if ticket := strings.TrimSpace(req.Ticket); ticket == "" {
@@ -369,12 +379,6 @@ func (oa *oauth2controller) passkeyPasswordlessLogin(c *gin.Context) {
 	if err != nil {
 		audit.Record(c, audit.TypeAuth, "Passkey login failed", err.Error())
 		c.JSON(http.StatusOK, model.Response{Code: http.StatusForbidden, Message: err.Error()})
-		return
-	}
-	// 管理员名单是超管身份的唯一来源：通行密钥的归属登录名被移出名单后不能再登录
-	if !isConfiguredAdmin(row.UserLogin) {
-		audit.Record(c, audit.TypeAuth, "Passkey login failed", "passkey owner is not an administrator: "+row.UserLogin)
-		c.JSON(http.StatusOK, model.Response{Code: http.StatusForbidden, Message: "该通行密钥所属用户已不是本站管理员"})
 		return
 	}
 	user := model.User{

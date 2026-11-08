@@ -316,6 +316,10 @@ func finishPasskeyAssertion(c *gin.Context, payload string, purpose passkeyPurpo
 	if matched == nil {
 		return nil, passkeyFail("当前域名下没有可用的通行密钥", errors.New("unknown credential id"))
 	}
+	// 每次使用都以当前管理员名单为准，不能依赖设置页删除凭据成功。
+	if !isConfiguredAdmin(matched.UserLogin) {
+		return nil, errors.New("该通行密钥所属用户不在管理员名单中")
+	}
 
 	var validated *webauthn.Credential
 	if purpose == passkeyPurposeLogin {
@@ -359,6 +363,9 @@ func finishPasskeyAssertion(c *gin.Context, payload string, purpose passkeyPurpo
 
 // beginPasskeyRegistration 为当前会话签发注册仪式。同一认证器在同一域名下不能重复注册。
 func beginPasskeyRegistration(c *gin.Context, binding, login, name string) (*protocol.CredentialCreation, error) {
+	if !isConfiguredAdmin(login) {
+		return nil, errors.New("仅管理员名单中的用户可以添加通行密钥")
+	}
 	rp, err := passkeyRPFromRequest(c)
 	if err != nil {
 		return nil, err
@@ -416,6 +423,10 @@ func finishPasskeyRegistration(c *gin.Context, binding string, payload []byte) (
 	ce, ok := consumePasskeyCeremony(parsed.Response.CollectedClientData.Challenge, passkeyPurposeRegister, binding)
 	if !ok {
 		return nil, errors.New("通行密钥验证已过期，请重试")
+	}
+	// 注册选项签发后，归属用户仍可能被移出管理员名单。
+	if !isConfiguredAdmin(ce.UserLogin) {
+		return nil, errors.New("仅管理员名单中的用户可以添加通行密钥")
 	}
 	rp, err := passkeyRPFromRequest(c)
 	if err != nil {
