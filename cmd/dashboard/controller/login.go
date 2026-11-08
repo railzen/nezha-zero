@@ -174,6 +174,13 @@ func (oa *oauth2controller) passwordLogin(c *gin.Context) {
 	}
 	req.Username = strings.TrimSpace(req.Username)
 	req.Password = strings.TrimSpace(req.Password)
+	// 纯空白用户名可通过 required 校验，去空格后为空时与参数无效同样处理，
+	// 避免管理员名单含空项（如 "admin,"）时空用户名匹配空项
+	if req.Username == "" {
+		audit.Record(c, audit.TypeAuth, "Password login failed", "invalid request parameters")
+		showLoginFailed(c)
+		return
+	}
 
 	ruleAllowed := true
 	if !singleton.Conf.PasswordLoginActive() {
