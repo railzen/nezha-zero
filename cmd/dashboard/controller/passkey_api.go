@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -51,6 +52,10 @@ func (ma *memberAPI) passkey(c *gin.Context) {
 
 	switch strings.TrimSpace(req.Operation) {
 	case "verify-options":
+		if !singleton.PasskeyEnabled() {
+			c.JSON(http.StatusOK, model.Response{Code: http.StatusBadRequest, Message: "未添加通行密钥"})
+			return
+		}
 		assertion, err := beginPasskeyAssertion(c, passkeyPurposeSessionVerify, binding)
 		if err != nil {
 			c.JSON(http.StatusOK, model.Response{Code: http.StatusBadRequest, Message: err.Error()})
@@ -136,6 +141,10 @@ func (ma *memberAPI) passkeyGrant(c *gin.Context, assertion string) {
 	}
 	if !allowAuthRateLimitedCheck(c) {
 		c.JSON(http.StatusOK, model.Response{Code: http.StatusTooManyRequests, Message: "请求过于频繁，请稍后再试"})
+		return
+	}
+	if !singleton.PasskeyEnabled() {
+		c.JSON(http.StatusOK, model.Response{Code: http.StatusBadRequest, Message: "未添加通行密钥"})
 		return
 	}
 	if strings.TrimSpace(assertion) == "" {
@@ -288,7 +297,7 @@ func (oa *oauth2controller) passkeyLoginOptions(c *gin.Context) {
 	purpose, binding := passkeyPurposeLogin, ""
 	if ticket := strings.TrimSpace(req.Ticket); ticket == "" {
 		if !singleton.Conf.PasswordLoginActive() {
-			c.JSON(http.StatusOK, model.Response{Code: http.StatusForbidden, Message: errPasskeyLoginDisabled.Error()})
+			c.JSON(http.StatusOK, model.Response{Code: http.StatusForbidden, Message: "未开启密码登录，通行密钥仅可用于二次验证"})
 			return
 		}
 	} else {
@@ -330,13 +339,21 @@ func (oa *oauth2controller) passkeyPasswordlessLogin(c *gin.Context) {
 		c.JSON(http.StatusOK, model.Response{Code: http.StatusTooManyRequests, Message: "请求过于频繁，请稍后再试"})
 		return
 	}
-	if !singleton.Conf.PasswordLoginActive() {
-		c.JSON(http.StatusOK, model.Response{Code: http.StatusForbidden, Message: errPasskeyLoginDisabled.Error()})
+	if !singleton.PasskeyEnabled() {
+		c.JSON(http.StatusOK, model.Response{Code: http.StatusForbidden, Message: "未添加通行密钥"})
 		return
 	}
 	payload, err := io.ReadAll(io.LimitReader(c.Request.Body, passkeyMaxPayloadBytes+1))
 	if err != nil {
 		c.JSON(http.StatusOK, model.Response{Code: http.StatusBadRequest, Message: "请求错误"})
+		return
+	}
+	if len(bytes.TrimSpace(payload)) == 0 {
+		c.JSON(http.StatusOK, model.Response{Code: http.StatusBadRequest, Message: "请完成通行密钥验证"})
+		return
+	}
+	if !singleton.Conf.PasswordLoginActive() {
+		c.JSON(http.StatusOK, model.Response{Code: http.StatusForbidden, Message: "未开启密码登录，通行密钥仅可用于二次验证"})
 		return
 	}
 	row, err := finishPasskeyAssertion(c, string(payload), passkeyPurposeLogin, "")
@@ -396,6 +413,11 @@ func (oa *oauth2controller) passkeySecondFactor(c *gin.Context) {
 	passkeyPayload := strings.TrimSpace(c.PostForm("passkey"))
 	if ticket == "" || passkeyPayload == "" {
 		oa.renderTwoFactor(c, http.StatusBadRequest, "", "登录会话无效，请重新登录")
+		return
+	}
+	// 未添加通行密钥：直接返回并保留 ticket，可改用动态验证码，不计入试错
+	if !singleton.PasskeyEnabled() {
+		oa.renderTwoFactor(c, http.StatusBadRequest, ticket, "未添加通行密钥")
 		return
 	}
 

@@ -62,15 +62,6 @@ type passkeyCeremony struct {
 
 var passkeyCeremonyMu sync.Mutex
 
-var (
-	errPasskeyUnavailable = errors.New("通行密钥需要通过 HTTPS 域名访问面板")
-	errPasskeyNotFound    = errors.New("当前域名下没有可用的通行密钥")
-	errPasskeyExpired     = errors.New("通行密钥验证已过期，请重试")
-	errPasskeyInvalid     = errors.New("通行密钥验证失败，请重试")
-	// errPasskeyLoginDisabled 未开启密码登录时，通行密钥只能代替 TOTP 完成二次验证
-	errPasskeyLoginDisabled = errors.New("未开启密码登录，通行密钥仅可用于二次验证")
-)
-
 // passkeyFailure 对外只展示 msg，cause 用于服务端日志排查（如 Origin 不匹配）。
 type passkeyFailure struct {
 	msg   string
@@ -80,7 +71,7 @@ type passkeyFailure struct {
 func (e *passkeyFailure) Error() string { return e.msg }
 func (e *passkeyFailure) Unwrap() error { return e.cause }
 
-func passkeyFail(public error, cause error) error {
+func passkeyFail(public string, cause error) error {
 	if cause != nil {
 		detail := cause.Error()
 		var pe *protocol.Error
@@ -92,7 +83,7 @@ func passkeyFail(public error, cause error) error {
 		}
 		log.Printf("NEZHA>> passkey ceremony failed: %s", detail)
 	}
-	return &passkeyFailure{msg: public.Error(), cause: cause}
+	return &passkeyFailure{msg: public, cause: cause}
 }
 
 // passkeyRP 当前请求对应的 WebAuthn 依赖方：RPID 为访问域名，Origin 为浏览器所见来源。
@@ -110,7 +101,7 @@ func passkeyRPFromRequest(c *gin.Context) (passkeyRP, error) {
 	}
 	// WebAuthn 不允许以 IP 作为 RPID
 	if hostname == "" || net.ParseIP(strings.Trim(hostname, "[]")) != nil || protocol.ValidateRPID(hostname) != nil {
-		return passkeyRP{}, errPasskeyUnavailable
+		return passkeyRP{}, errors.New("通行密钥需要通过 HTTPS 域名访问面板")
 	}
 	// 浏览器只在安全上下文中提供 WebAuthn：除 http://localhost 外均为 HTTPS
 	scheme := "https"
@@ -255,14 +246,14 @@ func beginPasskeyAssertion(c *gin.Context, purpose passkeyPurpose, binding strin
 	}
 	wa, err := newPasskeyWebAuthn(rp)
 	if err != nil {
-		return nil, passkeyFail(errPasskeyUnavailable, err)
+		return nil, passkeyFail("通行密钥需要通过 HTTPS 域名访问面板", err)
 	}
 	rows, creds, err := loadPasskeysForRP(rp.ID)
 	if err != nil {
-		return nil, passkeyFail(errors.New("读取通行密钥失败"), err)
+		return nil, passkeyFail("读取通行密钥失败", err)
 	}
 	if len(creds) == 0 {
-		return nil, errPasskeyNotFound
+		return nil, errors.New("当前域名下没有可用的通行密钥")
 	}
 
 	var (
@@ -274,12 +265,12 @@ func beginPasskeyAssertion(c *gin.Context, purpose passkeyPurpose, binding strin
 	} else {
 		handle, decodeErr := base64.RawURLEncoding.DecodeString(rows[0].UserHandle)
 		if decodeErr != nil {
-			return nil, passkeyFail(errPasskeyInvalid, decodeErr)
+			return nil, passkeyFail("通行密钥验证失败，请重试", decodeErr)
 		}
 		assertion, session, err = wa.BeginLogin(&passkeyAccount{handle: handle, creds: creds})
 	}
 	if err != nil {
-		return nil, passkeyFail(errPasskeyUnavailable, err)
+		return nil, passkeyFail("通行密钥需要通过 HTTPS 域名访问面板", err)
 	}
 	storePasskeyCeremony(&passkeyCeremony{Purpose: purpose, Binding: binding, Session: *session})
 	return assertion, nil
@@ -288,31 +279,31 @@ func beginPasskeyAssertion(c *gin.Context, purpose passkeyPurpose, binding strin
 // finishPasskeyAssertion 校验客户端回传的断言，成功时更新签名计数与最近使用时间并返回对应的通行密钥。
 func finishPasskeyAssertion(c *gin.Context, payload string, purpose passkeyPurpose, binding string) (*model.Passkey, error) {
 	if payload == "" || len(payload) > passkeyMaxPayloadBytes {
-		return nil, errPasskeyInvalid
+		return nil, errors.New("通行密钥验证失败，请重试")
 	}
 	parsed, err := protocol.ParseCredentialRequestResponseBytes([]byte(payload))
 	if err != nil {
-		return nil, passkeyFail(errPasskeyInvalid, err)
+		return nil, passkeyFail("通行密钥验证失败，请重试", err)
 	}
 	ce, ok := consumePasskeyCeremony(parsed.Response.CollectedClientData.Challenge, purpose, binding)
 	if !ok {
-		return nil, errPasskeyExpired
+		return nil, errors.New("通行密钥验证已过期，请重试")
 	}
 	rp, err := passkeyRPFromRequest(c)
 	if err != nil {
 		return nil, err
 	}
 	if ce.Session.RelyingPartyID != rp.ID {
-		return nil, errPasskeyInvalid
+		return nil, errors.New("通行密钥验证失败，请重试")
 	}
 	wa, err := newPasskeyWebAuthn(rp)
 	if err != nil {
-		return nil, passkeyFail(errPasskeyUnavailable, err)
+		return nil, passkeyFail("通行密钥需要通过 HTTPS 域名访问面板", err)
 	}
 
 	rows, creds, err := loadPasskeysForRP(rp.ID)
 	if err != nil {
-		return nil, passkeyFail(errors.New("读取通行密钥失败"), err)
+		return nil, passkeyFail("读取通行密钥失败", err)
 	}
 	credentialID := base64.RawURLEncoding.EncodeToString(parsed.RawID)
 	var matched *model.Passkey
@@ -323,7 +314,7 @@ func finishPasskeyAssertion(c *gin.Context, payload string, purpose passkeyPurpo
 		}
 	}
 	if matched == nil {
-		return nil, passkeyFail(errPasskeyNotFound, errors.New("unknown credential id"))
+		return nil, passkeyFail("当前域名下没有可用的通行密钥", errors.New("unknown credential id"))
 	}
 
 	var validated *webauthn.Credential
@@ -344,15 +335,15 @@ func finishPasskeyAssertion(c *gin.Context, payload string, purpose passkeyPurpo
 		validated, err = wa.ValidateLogin(&passkeyAccount{handle: ce.Session.UserID, creds: creds}, ce.Session, parsed)
 	}
 	if err != nil {
-		return nil, passkeyFail(errPasskeyInvalid, err)
+		return nil, passkeyFail("通行密钥验证失败，请重试", err)
 	}
 	if validated.Authenticator.CloneWarning {
-		return nil, passkeyFail(errors.New("通行密钥签名计数异常，可能已被复制，请删除后重新添加"), errors.New("sign count regressed"))
+		return nil, passkeyFail("通行密钥签名计数异常，可能已被复制，请删除后重新添加", errors.New("sign count regressed"))
 	}
 
 	data, err := json.Marshal(validated)
 	if err != nil {
-		return nil, passkeyFail(errPasskeyInvalid, err)
+		return nil, passkeyFail("通行密钥验证失败，请重试", err)
 	}
 	now := time.Now()
 	if err := singleton.DB.Model(&model.Passkey{}).Where("id = ?", matched.ID).Updates(map[string]any{
@@ -360,7 +351,7 @@ func finishPasskeyAssertion(c *gin.Context, payload string, purpose passkeyPurpo
 		"last_used_at": now,
 	}).Error; err != nil {
 		// 签名计数用于发现被复制的认证器，写入失败时拒绝本次验证，避免计数回退
-		return nil, passkeyFail(errors.New("保存通行密钥状态失败，请稍后重试"), err)
+		return nil, passkeyFail("保存通行密钥状态失败，请稍后重试", err)
 	}
 	matched.LastUsedAt = &now
 	return matched, nil
@@ -374,34 +365,34 @@ func beginPasskeyRegistration(c *gin.Context, binding, login, name string) (*pro
 	}
 	wa, err := newPasskeyWebAuthn(rp)
 	if err != nil {
-		return nil, passkeyFail(errPasskeyUnavailable, err)
+		return nil, passkeyFail("通行密钥需要通过 HTTPS 域名访问面板", err)
 	}
 	var total int64
 	if err := singleton.DB.Model(&model.Passkey{}).Count(&total).Error; err != nil {
-		return nil, passkeyFail(errors.New("读取通行密钥失败"), err)
+		return nil, passkeyFail("读取通行密钥失败", err)
 	}
 	if total >= passkeyMaxCount {
 		return nil, fmt.Errorf("最多只能添加 %d 个通行密钥", passkeyMaxCount)
 	}
 	_, creds, err := loadPasskeysForRP(rp.ID)
 	if err != nil {
-		return nil, passkeyFail(errors.New("读取通行密钥失败"), err)
+		return nil, passkeyFail("读取通行密钥失败", err)
 	}
 	handle, err := existingPasskeyHandle()
 	if err != nil {
-		return nil, passkeyFail(errors.New("读取通行密钥失败"), err)
+		return nil, passkeyFail("读取通行密钥失败", err)
 	}
 	if handle == nil {
 		handle = make([]byte, passkeyUserHandleBytes)
 		if _, err := rand.Read(handle); err != nil {
-			return nil, passkeyFail(errors.New("生成通行密钥失败"), err)
+			return nil, passkeyFail("生成通行密钥失败", err)
 		}
 	}
 	account := &passkeyAccount{handle: handle, login: login, creds: creds}
 	creation, session, err := wa.BeginRegistration(account,
 		webauthn.WithExclusions(webauthn.Credentials(creds).CredentialDescriptors()))
 	if err != nil {
-		return nil, passkeyFail(errPasskeyUnavailable, err)
+		return nil, passkeyFail("通行密钥需要通过 HTTPS 域名访问面板", err)
 	}
 	storePasskeyCeremony(&passkeyCeremony{
 		Purpose:   passkeyPurposeRegister,
@@ -416,43 +407,43 @@ func beginPasskeyRegistration(c *gin.Context, binding, login, name string) (*pro
 // finishPasskeyRegistration 校验注册结果并保存通行密钥。
 func finishPasskeyRegistration(c *gin.Context, binding string, payload []byte) (*model.Passkey, error) {
 	if len(payload) == 0 || len(payload) > passkeyMaxPayloadBytes {
-		return nil, errPasskeyInvalid
+		return nil, errors.New("通行密钥验证失败，请重试")
 	}
 	parsed, err := protocol.ParseCredentialCreationResponseBytes(payload)
 	if err != nil {
-		return nil, passkeyFail(errPasskeyInvalid, err)
+		return nil, passkeyFail("通行密钥验证失败，请重试", err)
 	}
 	ce, ok := consumePasskeyCeremony(parsed.Response.CollectedClientData.Challenge, passkeyPurposeRegister, binding)
 	if !ok {
-		return nil, errPasskeyExpired
+		return nil, errors.New("通行密钥验证已过期，请重试")
 	}
 	rp, err := passkeyRPFromRequest(c)
 	if err != nil {
 		return nil, err
 	}
 	if ce.Session.RelyingPartyID != rp.ID {
-		return nil, errPasskeyInvalid
+		return nil, errors.New("通行密钥验证失败，请重试")
 	}
 	wa, err := newPasskeyWebAuthn(rp)
 	if err != nil {
-		return nil, passkeyFail(errPasskeyUnavailable, err)
+		return nil, passkeyFail("通行密钥需要通过 HTTPS 域名访问面板", err)
 	}
 	cred, err := wa.CreateCredential(&passkeyAccount{handle: ce.Session.UserID, login: ce.UserLogin}, ce.Session, parsed)
 	if err != nil {
-		return nil, passkeyFail(errors.New("通行密钥注册失败，请重试"), err)
+		return nil, passkeyFail("通行密钥注册失败，请重试", err)
 	}
 
 	// 全站共用一个用户句柄：注册期间若已有其他句柄的通行密钥写入，要求重试
 	handle, err := existingPasskeyHandle()
 	if err != nil {
-		return nil, passkeyFail(errors.New("读取通行密钥失败"), err)
+		return nil, passkeyFail("读取通行密钥失败", err)
 	}
 	if handle != nil && subtle.ConstantTimeCompare(handle, ce.Session.UserID) != 1 {
 		return nil, errors.New("通行密钥状态已变化，请重试")
 	}
 	var total int64
 	if err := singleton.DB.Model(&model.Passkey{}).Count(&total).Error; err != nil {
-		return nil, passkeyFail(errors.New("读取通行密钥失败"), err)
+		return nil, passkeyFail("读取通行密钥失败", err)
 	}
 	if total >= passkeyMaxCount {
 		return nil, fmt.Errorf("最多只能添加 %d 个通行密钥", passkeyMaxCount)
@@ -460,7 +451,7 @@ func finishPasskeyRegistration(c *gin.Context, binding string, payload []byte) (
 
 	data, err := json.Marshal(cred)
 	if err != nil {
-		return nil, passkeyFail(errors.New("通行密钥注册失败，请重试"), err)
+		return nil, passkeyFail("通行密钥注册失败，请重试", err)
 	}
 	row := &model.Passkey{
 		Name:         ce.Name,
@@ -476,7 +467,7 @@ func finishPasskeyRegistration(c *gin.Context, binding string, payload []byte) (
 		return nil, errors.New("该通行密钥已添加")
 	}
 	if err := singleton.DB.Create(row).Error; err != nil {
-		return nil, passkeyFail(errors.New("保存通行密钥失败，请稍后重试"), err)
+		return nil, passkeyFail("保存通行密钥失败，请稍后重试", err)
 	}
 	singleton.RefreshPasskeyCount()
 	return row, nil
@@ -500,6 +491,12 @@ func isConfiguredAdmin(login string) bool {
 // 与 verifySessionTwoFactor 共用每会话试错计数。通过时返回空字符串。
 func verifySessionPasskey(c *gin.Context, assertion string) string {
 	const tooManyFailures = "验证码错误次数过多，请重新登录后再试"
+	if !singleton.PasskeyEnabled() {
+		return "未添加通行密钥"
+	}
+	if strings.TrimSpace(assertion) == "" {
+		return "请完成通行密钥验证"
+	}
 	// 通行密钥只代替 TOTP：未绑定 TOTP（未开启双重验证）时一律拒绝
 	if !singleton.Conf.TwoFactorActive() {
 		return "双重验证未启用"
