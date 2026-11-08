@@ -874,7 +874,7 @@ function showTwoFactorGrantModal(callback, openWindow) {
           return;
         }
         pendingOpen = true;
-        form.append($('<div class="ui positive message"></div>').text("验证已通过，请再次点击确认打开"));
+        form.append($('<div class="ui positive message"></div>').text(modal.data("reopen-prompt")));
       })
       .catch(function (err) {
         form.append($('<div class="ui negative message"></div>').text(nzPasskey.errorMessage(err)));
@@ -931,7 +931,7 @@ function showTwoFactorGrantModal(callback, openWindow) {
               return;
             }
             pendingOpen = true;
-            form.append($('<div class="ui positive message"></div>').text("验证已通过，请再次点击确认打开"));
+            form.append($('<div class="ui positive message"></div>').text(modal.data("reopen-prompt")));
           })
           .fail(function (err) {
             form.append($('<div class="ui negative message"></div>').text("网络错误：" + err.responseText));

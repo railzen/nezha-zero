@@ -1466,3 +1466,6 @@ other = "Review passkeys"
 
 [PasskeyAddRequireTwoFactor]
 other = "When only OAuth sign-in is enabled, turn on two-factor authentication before adding a passkey."
+
+[TwoFactorGrantReopenPrompt]
+other = "Verification passed. Click again to open."

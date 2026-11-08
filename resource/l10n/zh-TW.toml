@@ -1464,3 +1464,6 @@ other = "查看通行金鑰"
 
 [PasskeyAddRequireTwoFactor]
 other = "僅使用 OAuth 登入時，需先開啟雙重驗證才能新增通行金鑰。"
+
+[TwoFactorGrantReopenPrompt]
+other = "驗證已通過，請再次點擊確認開啟"

@@ -1457,3 +1457,6 @@ other = "Revisar llaves de acceso"
 
 [PasskeyAddRequireTwoFactor]
 other = "Cuando solo está activado el inicio de sesión con OAuth, active la autenticación en dos pasos antes de añadir una llave de acceso."
+
+[TwoFactorGrantReopenPrompt]
+other = "Verificación completada. Haga clic de nuevo para abrir."

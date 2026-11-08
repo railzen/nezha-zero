@@ -103,7 +103,7 @@ func (ma *memberAPI) passkey(c *gin.Context) {
 			c.JSON(http.StatusOK, model.Response{Code: http.StatusBadRequest, Message: err.Error()})
 			return
 		}
-		c.JSON(http.StatusOK, model.Response{Code: http.StatusOK, Message: "通行密钥已添加"})
+		c.JSON(http.StatusOK, model.Response{Code: http.StatusOK, Message: "Success"})
 		audit.Record(c, audit.TypeSecurity, "Passkey registered",
 			fmt.Sprintf("user: %s, passkey: %q, domain: %s", row.UserLogin, row.Name, row.RPID))
 
@@ -131,7 +131,7 @@ func (ma *memberAPI) passkey(c *gin.Context) {
 		// 返回被删凭据，前端据此通过 Signal API 让当前浏览器同步移除
 		c.JSON(http.StatusOK, model.Response{
 			Code:    http.StatusOK,
-			Message: "通行密钥已删除",
+			Message: "Success",
 			Result:  gin.H{"rpId": row.RPID, "credentialId": row.CredentialID},
 		})
 		audit.Record(c, audit.TypeSecurity, "Passkey deleted",
