@@ -1455,9 +1455,5 @@ other = "Delete passkey"
 [PasskeyDeleteConfirm]
 other = "Delete this passkey? All other signed-in sessions except this one will be signed out."
 
-[PasskeyCodeOptionalHint]
-other = "You can also leave the code empty and verify with an existing passkey after confirming."
-
-
 [PasskeyUnsupported]
 other = "Passkeys are not supported by this browser or address. Access the panel over HTTPS by domain name."

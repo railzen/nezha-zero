@@ -1453,9 +1453,5 @@ other = "删除通行密钥"
 [PasskeyDeleteConfirm]
 other = "确认删除该通行密钥？删除后，除当前会话外的其他登录会话将被注销。"
 
-[PasskeyCodeOptionalHint]
-other = "也可以不填写动态验证码，确认后使用已添加的通行密钥验证。"
-
-
 [PasskeyUnsupported]
 other = "当前浏览器或访问地址不支持通行密钥，请使用 HTTPS 域名访问"

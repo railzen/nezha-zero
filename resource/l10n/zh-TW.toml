@@ -1453,9 +1453,5 @@ other = "刪除通行金鑰"
 [PasskeyDeleteConfirm]
 other = "確認刪除此通行金鑰？刪除後，除目前工作階段外的其他登入工作階段將被登出。"
 
-[PasskeyCodeOptionalHint]
-other = "也可以不填寫動態驗證碼，確認後使用已新增的通行金鑰驗證。"
-
-
 [PasskeyUnsupported]
 other = "目前瀏覽器或存取位址不支援通行金鑰，請使用 HTTPS 網域存取"

@@ -207,11 +207,6 @@
 </script>
 {{end}}
 {{if and .PasskeyEnabled .PasswordEnabled (not .SecondFactorMode)}}
-<style>
-  .login form + .passkey-login-btn {
-    margin-top: 1em;
-  }
-</style>
 <script>
   // 通行密钥免密码登录：可发现凭据，无需输入用户名
   (function() {

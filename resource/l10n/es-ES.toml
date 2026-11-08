@@ -1446,9 +1446,5 @@ other = "Eliminar llave de acceso"
 [PasskeyDeleteConfirm]
 other = "¿Eliminar esta llave de acceso? Se cerrarán todas las demás sesiones excepto la actual."
 
-[PasskeyCodeOptionalHint]
-other = "También puede dejar el código vacío y verificar con una llave de acceso existente tras confirmar."
-
-
 [PasskeyUnsupported]
 other = "Este navegador o dirección no admite llaves de acceso. Acceda al panel por HTTPS con un nombre de dominio."
