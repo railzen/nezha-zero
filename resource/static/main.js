@@ -1393,7 +1393,7 @@ const searchPicker = (function () {
         $('<div class="item"></div>')
           .attr("data-value", item.id)
           .toggleClass("selected", i === highlight)
-          .append($('<i class="icon"></i>').addClass(checked ? "blue check square" : "square outline"))
+          .append($('<i class="icon"></i>').addClass(checked ? "nezha-primary-font check square" : "square outline"))
           .append($('<span class="description"></span>').css({ color: "inherit", opacity: .6 }).text("ID:" + item.id))
           .append(document.createTextNode(item.name))
           .appendTo($menu);
