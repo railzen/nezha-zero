@@ -359,7 +359,6 @@ function addOrEditAlertRule(rule, alertType) {
   form.find("[name=ID]").val(rule ? rule.ID : 0);
   form.find("[name=Name]").val(rule ? rule.Name : "");
   form.find("[name=NotificationTag]").val(rule ? rule.NotificationTag : "default");
-  modal.find("a.ui.label.visible").remove();
 
   if (type === 0) {
     form.find("[name=RulesRaw]").val(rule ? rule.RulesRaw : "");
@@ -369,8 +368,8 @@ function addOrEditAlertRule(rule, alertType) {
     );
     form.find("[name=AdvanceDays]").val(1);
     setFormSelectValue(form.find("[name=Cover]"), "0");
-    form.find("[name=SkipServersRaw]").val("");
-    form.find("[name=SkipSubscriptionsRaw]").val("");
+    setSearchPickerValue(form, "SkipServersRaw", []);
+    setSearchPickerValue(form, "SkipSubscriptionsRaw", []);
     modal.find(".expiration-daily-reminder").checkbox("set unchecked");
     modal.find(".expiration-rule-enable").checkbox(
       !rule || rule.Enable ? "set checked" : "set unchecked"
@@ -379,26 +378,14 @@ function addOrEditAlertRule(rule, alertType) {
     setFormSelectValue(form.find("[name=SubscriptionCover]"), "0");
     modal.find(".subscription-expiration-daily-reminder").checkbox("set unchecked");
     modal.find(".subscription-expiration-rule-enable").checkbox("set checked");
-    const failRaw = rule ? rule.FailTriggerTasksRaw || "[]" : "[]";
-    const recoverRaw = rule ? rule.RecoverTriggerTasksRaw || "[]" : "[]";
-    form.find("[name=FailTriggerTasksRaw]").val(failRaw);
-    form.find("[name=RecoverTriggerTasksRaw]").val(recoverRaw);
-    const node1 = modal.find("i.dropdown.icon.1");
-    const node2 = modal.find("i.dropdown.icon.2");
-    JSON.parse(failRaw).forEach(function (id) {
-      node1.after('<a class="ui label transition visible" data-value="' + id +
-        '" style="display: inline-block !important;">ID:' + id + '<i class="delete icon"></i></a>');
-    });
-    JSON.parse(recoverRaw).forEach(function (id) {
-      node2.after('<a class="ui label transition visible" data-value="' + id +
-        '" style="display: inline-block !important;">ID:' + id + '<i class="delete icon"></i></a>');
-    });
+    setSearchPickerValue(form, "FailTriggerTasksRaw", rule ? rule.FailTriggerTasksRaw : []);
+    setSearchPickerValue(form, "RecoverTriggerTasksRaw", rule ? rule.RecoverTriggerTasksRaw : []);
   } else if (type === 1) {
     form.find("[name=RulesRaw]").val("");
     setFormSelectValue(form.find("[name=TriggerMode]"), "0");
-    form.find("[name=FailTriggerTasksRaw]").val("[]");
-    form.find("[name=RecoverTriggerTasksRaw]").val("[]");
-    form.find("[name=SkipSubscriptionsRaw]").val("");
+    setSearchPickerValue(form, "FailTriggerTasksRaw", []);
+    setSearchPickerValue(form, "RecoverTriggerTasksRaw", []);
+    setSearchPickerValue(form, "SkipSubscriptionsRaw", []);
     modal.find(".ui.rule-enable.checkbox").checkbox(
       rule && rule.Enable ? "set checked" : "set unchecked"
     );
@@ -416,18 +403,13 @@ function addOrEditAlertRule(rule, alertType) {
     const serverIDs = Object.keys(expirationRule.ignore || {}).map(function (id) {
       return parseInt(id, 10);
     });
-    form.find("[name=SkipServersRaw]").val(serverIDs.join(","));
-    const serverIcon = form.find("i.dropdown.icon.expirationSpecificServer");
-    serverIDs.forEach(function (id) {
-      serverIcon.after('<a class="ui label transition visible" data-value="' + id +
-        '" style="display: inline-block !important;">ID:' + id + '<i class="delete icon"></i></a>');
-    });
+    setSearchPickerValue(form, "SkipServersRaw", serverIDs);
   } else {
     form.find("[name=RulesRaw]").val("");
     setFormSelectValue(form.find("[name=TriggerMode]"), "0");
-    form.find("[name=FailTriggerTasksRaw]").val("[]");
-    form.find("[name=RecoverTriggerTasksRaw]").val("[]");
-    form.find("[name=SkipServersRaw]").val("");
+    setSearchPickerValue(form, "FailTriggerTasksRaw", []);
+    setSearchPickerValue(form, "RecoverTriggerTasksRaw", []);
+    setSearchPickerValue(form, "SkipServersRaw", []);
     const expirationRule = rule ? JSON.parse(rule.RulesRaw || "[]")[0] || {} : {};
     form.find("[name=SubscriptionAdvanceDays]").val(rule ? expirationRule.advance_days : 1);
     setFormSelectValue(form.find("[name=SubscriptionCover]"),
@@ -442,12 +424,7 @@ function addOrEditAlertRule(rule, alertType) {
     const subscriptionIDs = Object.keys(expirationRule.ignore || {}).map(function (id) {
       return parseInt(id, 10);
     });
-    form.find("[name=SkipSubscriptionsRaw]").val(subscriptionIDs.join(","));
-    const subscriptionIcon = form.find("i.dropdown.icon.subscriptionExpirationSpecific");
-    subscriptionIDs.forEach(function (id) {
-      subscriptionIcon.after('<a class="ui label transition visible" data-value="' + id +
-        '" style="display: inline-block !important;">ID:' + id + '<i class="delete icon"></i></a>');
-    });
+    setSearchPickerValue(form, "SkipSubscriptionsRaw", subscriptionIDs);
   }
   alertRuleTypeChanged();
   showFormModal(".rule.modal", "#ruleForm", "/api/alert-rule", alertRuleData);
@@ -1082,33 +1059,7 @@ function addOrEditServer(server, conf) {
   modal.find("input[name=id]").val(server ? server.ID : null);
   modal.find("input[name=name]").val(server ? server.Name : null);
   modal.find("input[name=Tag]").val(server ? server.Tag : null);
-  modal.find("a.ui.label.visible").each((i, el) => {
-    el.remove();
-  });
-  var ddns;
-  if (server) {
-    ddns = server.DDNSProfilesRaw;
-    let serverList;
-    try {
-      serverList = JSON.parse(ddns);
-    } catch (error) {
-      serverList = "[]";
-    }
-    const node = modal.find("i.dropdown.icon.ddnsProfiles");
-    for (let i = 0; i < serverList.length; i++) {
-      node.after(
-        '<a class="ui label transition visible" data-value="' +
-        serverList[i] +
-        '" style="display: inline-block !important;">ID:' +
-        serverList[i] +
-        '<i class="delete icon"></i></a>'
-      );
-    }
-  }
-  // 需要在 showFormModal 进一步拼接数组
-  modal
-    .find("input[name=DDNSProfilesRaw]")
-    .val(server ? "[]," + ddns.substr(1, ddns.length - 2) : "[]");
+  setSearchPickerValue(modal, "DDNSProfilesRaw", server ? server.DDNSProfilesRaw : []);
   modal
     .find("input[name=DisplayIndex]")
     .val(server ? server.DisplayIndex : null);
@@ -1171,67 +1122,14 @@ function addOrEditMonitor(monitor) {
   } else {
     modal.find(".ui.nb-lt-notify.checkbox").checkbox("set unchecked");
   }
-  modal.find("a.ui.label.visible").each((i, el) => {
-    el.remove();
-  });
   if (monitor && monitor.EnableTriggerTask) {
     modal.find(".ui.nb-EnableTriggerTask.checkbox").checkbox("set checked");
   } else {
     modal.find(".ui.nb-EnableTriggerTask.checkbox").checkbox("set unchecked");
   }
-  var servers;
-  var failTriggerTasks;
-  var recoverTriggerTasks;
-  if (monitor) {
-    servers = monitor.SkipServersRaw;
-    const serverList = JSON.parse(servers || "[]");
-    const node = modal.find("i.dropdown.icon.specificServer");
-    for (let i = 0; i < serverList.length; i++) {
-      node.after(
-        '<a class="ui label transition visible" data-value="' +
-        serverList[i] +
-        '" style="display: inline-block !important;">ID:' +
-        serverList[i] +
-        '<i class="delete icon"></i></a>'
-      );
-    }
-
-    failTriggerTasks = monitor.FailTriggerTasksRaw;
-    recoverTriggerTasks = monitor.RecoverTriggerTasksRaw;
-    const failTriggerTasksList = JSON.parse(failTriggerTasks || "[]");
-    const recoverTriggerTasksList = JSON.parse(recoverTriggerTasks || "[]");
-    const node1 = modal.find("i.dropdown.icon.failTask");
-    const node2 = modal.find("i.dropdown.icon.recoverTask");
-    for (let i = 0; i < failTriggerTasksList.length; i++) {
-      node1.after(
-        '<a class="ui label transition visible" data-value="' +
-        failTriggerTasksList[i] +
-        '" style="display: inline-block !important;">ID:' +
-        failTriggerTasksList[i] +
-        '<i class="delete icon"></i></a>'
-      );
-    }
-    for (let i = 0; i < recoverTriggerTasksList.length; i++) {
-      node2.after(
-        '<a class="ui label transition visible" data-value="' +
-        recoverTriggerTasksList[i] +
-        '" style="display: inline-block !important;">ID:' +
-        recoverTriggerTasksList[i] +
-        '<i class="delete icon"></i></a>'
-      );
-    }
-  }
-  // 需要在 showFormModal 进一步拼接数组
-  modal
-    .find("input[name=FailTriggerTasksRaw]")
-    .val(monitor ? "[]," + failTriggerTasks.substr(1, failTriggerTasks.length - 2) : "[]");
-  modal
-    .find("input[name=RecoverTriggerTasksRaw]")
-    .val(monitor ? "[]," + recoverTriggerTasks.substr(1, recoverTriggerTasks.length - 2) : "[]");
-
-  modal
-    .find("input[name=SkipServersRaw]")
-    .val(monitor ? "[]," + servers.substr(1, servers.length - 2) : "[]");
+  setSearchPickerValue(modal, "SkipServersRaw", monitor ? monitor.SkipServersRaw : []);
+  setSearchPickerValue(modal, "FailTriggerTasksRaw", monitor ? monitor.FailTriggerTasksRaw : []);
+  setSearchPickerValue(modal, "RecoverTriggerTasksRaw", monitor ? monitor.RecoverTriggerTasksRaw : []);
   showFormModal(".monitor.modal", "#monitorForm", "/api/monitor");
 }
 
@@ -1255,28 +1153,7 @@ function showCronModal(cron) {
   modal.find("select[name=Cover]").val(cron ? cron.Cover : 0);
   modal.find("input[name=NotificationTag]").val(cron ? cron.NotificationTag : null);
   modal.find("input[name=Scheduler]").val(cron ? cron.Scheduler : null);
-  modal.find("a.ui.label.visible").each((i, el) => {
-    el.remove();
-  });
-  var servers;
-  if (cron) {
-    servers = cron.ServersRaw;
-    const serverList = JSON.parse(servers || "[]");
-    const node = modal.find("i.dropdown.icon");
-    for (let i = 0; i < serverList.length; i++) {
-      node.after(
-        '<a class="ui label transition visible" data-value="' +
-        serverList[i] +
-        '" style="display: inline-block !important;">ID:' +
-        serverList[i] +
-        '<i class="delete icon"></i></a>'
-      );
-    }
-  }
-  // 需要在 showFormModal 进一步拼接数组
-  modal
-    .find("input[name=ServersRaw]")
-    .val(cron ? "[]," + servers.substr(1, servers.length - 2) : "[]");
+  setSearchPickerValue(modal, "ServersRaw", cron ? cron.ServersRaw : []);
   modal.find("textarea[name=Command]").val(cron ? cron.Command : null);
   if (cron && cron.PushSuccessful) {
     modal.find(".ui.push-successful.checkbox").checkbox("set checked");
@@ -1386,75 +1263,412 @@ function logout(id) {
     });
 }
 
-$(document).ready(() => {
-  try {
-    // Semantic UI 的远程下拉菜单默认用 innerHTML 渲染结果；服务器名称
-    // 可由 API 创建，菜单和标签均须按纯文本渲染（包括缓存回显）。
-    function escapeServerSearchHtml(value) {
-      return String(value)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
+// 远程搜索多选框（特定服务器、触发任务、特定订阅、DDNS 配置共用）：
+// - 下拉列表按排序值降序、相同则 ID 升序排列（与各管理页一致；无排序值的按 ID 升序）；
+// - 已选项在列表中显示为勾选，单击列表项切换选中，菜单保持打开便于连续多选；
+// - 双击输入框切换为文本框，可直接编辑以逗号分隔的 ID，回车或失焦生效，Esc 放弃。
+// 隐藏输入框的值为 JSON 数组（如 [1,2]），提交时沿用原有的 *Raw 解析逻辑。
+const searchPicker = (function () {
+  // 下拉框类名 → 搜索接口
+  const sources = {
+    servers: "/api/search-server",
+    tasks: "/api/search-tasks",
+    subscriptions: "/api/search-subscription",
+    ddns: "/api/search-ddns",
+  };
+  const catalogPromises = {};
+
+  function parseIDs(value) {
+    const seen = {};
+    const ids = [];
+    const list = Array.isArray(value) ? value : String(value || "").match(/\d+/g) || [];
+    list.forEach(function (raw) {
+      const id = parseInt(raw, 10);
+      if (id > 0 && !seen[id]) {
+        seen[id] = true;
+        ids.push(id);
+      }
+    });
+    return ids;
+  }
+
+  function fetchSearch(url, word) {
+    return fetch(url + "?word=" + encodeURIComponent(word), { cache: "no-store" })
+      .then(function (resp) { return resp.ok ? resp.json() : {}; })
+      .then(function (data) {
+        return sortItems((data && data.results || []).map(function (item) {
+          return {
+            id: Number(item.value),
+            name: String(item.name || item.text || ""),
+            displayIndex: Number(item.display_index) || 0,
+          };
+        }).filter(function (item) { return item.id > 0; }));
+      });
+  }
+
+  // 排序值降序，相同则 ID 升序
+  function sortItems(list) {
+    return list.sort(function (a, b) {
+      return b.displayIndex - a.displayIndex || a.id - b.id;
+    });
+  }
+
+  // 全部条目（用于空搜索时的菜单和已选标签的名称），每个接口整页只加载一次
+  function loadCatalog(url) {
+    if (!catalogPromises[url]) {
+      catalogPromises[url] = fetchSearch(url, "")
+        .catch(function () { return []; })
+        .then(function (list) {
+          const names = {};
+          list.forEach(function (item) { names[item.id] = item.name; });
+          return { names: names, list: list };
+        });
+    }
+    return catalogPromises[url];
+  }
+
+  function create(root, url) {
+    const $root = $(root);
+    const $input = $root.children("input[type=hidden]");
+    const $icon = $root.children("i.dropdown.icon");
+    const $text = $root.children(".text");
+    const $menu = $root.children(".menu");
+    const $search = $('<input class="search" autocomplete="off" tabindex="0">');
+    const $sizer = $('<span aria-hidden="true"></span>').css({
+      position: "absolute", visibility: "hidden", height: 0, overflow: "hidden",
+      whiteSpace: "pre", top: 0, left: 0,
+    });
+    const $editor = $('<input type="text" autocomplete="off" placeholder="1,2,3">').hide();
+    if ($text.length) {
+      $search.insertBefore($text);
+    } else {
+      $search.insertBefore($menu);
+    }
+    $root.append($sizer);
+    $editor.insertAfter($root);
+
+    let selected = [];
+    let names = {};
+    let items = [];
+    let highlight = -1;
+    let open = false;
+    let loading = false;
+    let editing = false;
+    let seq = 0;
+    let timer = null;
+
+    function labelText(id) {
+      return names[id] != null && names[id] !== "" ? names[id] : "ID:" + id;
     }
 
-    $(".ui.servers.search.dropdown").dropdown({
-      clearable: true,
-      preserveHTML: false,
-      templates: {
-        menu: function (data, fields) {
-          return (data[fields.values] || []).map(function (item) {
-            return '<div class="' + (item[fields.disabled] ? 'disabled ' : '') +
-              'item" data-value="' + escapeServerSearchHtml(item[fields.value]) +
-              '" data-text="' + escapeServerSearchHtml(item[fields.text] || item[fields.name]) +
-              '">' + escapeServerSearchHtml(item[fields.name]) + '</div>';
-          }).join('');
-        },
-        label: function (value, text) {
-          return escapeServerSearchHtml(text) + '<i class="delete icon"></i>';
-        },
-      },
-      apiSettings: {
-        url: "/api/search-server?word={query}",
-        cache: false,
-      },
+    function renderLabels() {
+      $root.children("a.server-picker-label").remove();
+      selected.forEach(function (id) {
+        $('<a class="ui label server-picker-label"></a>')
+          .attr({ "data-value": id, title: "ID:" + id })
+          .text(labelText(id))
+          .append('<i class="delete icon"></i>')
+          .insertBefore($search);
+      });
+      $input.val(JSON.stringify(selected));
+      $icon.toggleClass("clear", selected.length > 0);
+    }
+
+    function renderMenu() {
+      const scrollTop = $menu.scrollTop();
+      $menu.empty();
+      if (!items.length) {
+        $('<div class="message"></div>').text(loading ? "..." : "No results found.").appendTo($menu);
+        return;
+      }
+      items.forEach(function (item, i) {
+        const checked = selected.indexOf(item.id) >= 0;
+        $('<div class="item"></div>')
+          .attr("data-value", item.id)
+          .toggleClass("selected", i === highlight)
+          .append($('<i class="icon"></i>').addClass(checked ? "blue check square" : "square outline"))
+          .append($('<span class="description"></span>').css({ color: "inherit", opacity: .6 }).text("ID:" + item.id))
+          .append(document.createTextNode(item.name))
+          .appendTo($menu);
+      });
+      $menu.scrollTop(scrollTop);
+    }
+
+    function scrollToHighlight() {
+      const el = $menu.children(".item").get(highlight);
+      if (el) el.scrollIntoView({ block: "nearest" });
+    }
+
+    function setItems(list, query) {
+      items = list;
+      list.forEach(function (item) { names[item.id] = item.name; });
+      highlight = query && items.length ? 0 : -1;
+      loading = false;
+      renderMenu();
+      renderLabels();
+    }
+
+    function refresh() {
+      const query = $search.val().trim();
+      const current = ++seq;
+      clearTimeout(timer);
+      if (!items.length) {
+        loading = true;
+        renderMenu();
+      }
+      const run = function () {
+        Promise.all([loadCatalog(url), query ? fetchSearch(url, query) : null])
+          .then(function (result) {
+            if (current !== seq) return;
+            setItems(query ? result[1] : result[0].list, query);
+          })
+          .catch(function () {
+            if (current !== seq) return;
+            setItems([], query);
+          });
+      };
+      if (query) {
+        timer = setTimeout(run, 200);
+      } else {
+        run();
+      }
+    }
+
+    function updateSearch() {
+      const value = $search.val();
+      $text.toggleClass("filtered", value.length > 0);
+      $sizer.text(value);
+      $search.css("width", value ? $sizer[0].offsetWidth + 8 + "px" : "");
+    }
+
+    function show() {
+      if (!open) {
+        open = true;
+        $root.addClass("active visible");
+        $menu.addClass("transition visible");
+        refresh();
+      }
+      $search.trigger("focus");
+    }
+
+    function hide() {
+      if (!open) return;
+      open = false;
+      seq++;
+      clearTimeout(timer);
+      $root.removeClass("active visible");
+      $menu.removeClass("transition visible");
+      if ($search.val()) {
+        $search.val("");
+        updateSearch();
+        items = [];
+      }
+      highlight = -1;
+    }
+
+    function toggleItem(id) {
+      const index = selected.indexOf(id);
+      if (index >= 0) {
+        selected.splice(index, 1);
+      } else {
+        selected.push(id);
+      }
+      renderLabels();
+      if (open) renderMenu();
+    }
+
+    function setSelected(ids) {
+      selected = parseIDs(ids);
+      renderLabels();
+      if (open) renderMenu();
+      if (!selected.length) return;
+      loadCatalog(url).then(function (catalog) {
+        Object.keys(catalog.names).forEach(function (id) {
+          if (!(id in names)) names[id] = catalog.names[id];
+        });
+        renderLabels();
+      });
+    }
+
+    function startEdit() {
+      hide();
+      editing = true;
+      $root.hide();
+      $editor.val(selected.join(",")).show().trigger("focus");
+      const length = $editor.val().length;
+      $editor[0].setSelectionRange(length, length);
+    }
+
+    function finishEdit(apply) {
+      if (!editing) return;
+      editing = false;
+      const value = $editor.val();
+      $editor.hide();
+      $root.show();
+      if (apply) setSelected(value);
+    }
+
+    // 保持焦点在搜索框上，点击标签、图标、菜单项时菜单不因失焦而关闭
+    $root.on("mousedown", function (e) {
+      if (e.target !== $search[0]) e.preventDefault();
     });
-  } catch (error) { }
-});
+
+    $root.on("click", function (e) {
+      const $target = $(e.target);
+      if ($target.closest($menu).length) return;
+      const $remove = $target.closest("a.server-picker-label > .delete.icon");
+      if ($remove.length) {
+        toggleItem(parseInt($remove.parent().attr("data-value"), 10));
+        if (open) $search.trigger("focus");
+        return;
+      }
+      if ($target.is($icon)) {
+        if ($icon.hasClass("clear")) {
+          setSelected([]);
+          if (open) $search.trigger("focus");
+        } else if (open) {
+          hide();
+        } else {
+          show();
+        }
+        return;
+      }
+      show();
+    });
+
+    $root.on("dblclick", function (e) {
+      const $target = $(e.target);
+      if (!document.contains(e.target) || $target.closest($menu).length ||
+        $target.closest(".delete.icon").length || $target.is($icon) ||
+        ($target.is($search) && $search.val())) {
+        return;
+      }
+      e.preventDefault();
+      startEdit();
+    });
+
+    $menu.on("click", ".item", function () {
+      highlight = $(this).index();
+      toggleItem(parseInt($(this).attr("data-value"), 10));
+      $search.trigger("focus");
+    });
+
+    $search.on("input", function () {
+      updateSearch();
+      if (!open) {
+        show();
+      } else {
+        refresh();
+      }
+    });
+
+    $search.on("blur", function () {
+      hide();
+    });
+
+    $search.on("keydown", function (e) {
+      switch (e.key) {
+        case "ArrowDown":
+        case "ArrowUp":
+          e.preventDefault();
+          if (!open) {
+            show();
+            return;
+          }
+          if (!items.length) return;
+          if (e.key === "ArrowDown") {
+            highlight = highlight < items.length - 1 ? highlight + 1 : highlight;
+          } else {
+            highlight = highlight > 0 ? highlight - 1 : 0;
+          }
+          renderMenu();
+          scrollToHighlight();
+          return;
+        case "Enter":
+          e.preventDefault();
+          if (open && highlight >= 0 && items[highlight]) {
+            toggleItem(items[highlight].id);
+          } else if (!open) {
+            show();
+          }
+          return;
+        case "Escape":
+          if (open) {
+            // 只关闭菜单，不触发外层弹窗的 Esc 关闭
+            e.preventDefault();
+            e.stopPropagation();
+            hide();
+          }
+          return;
+        case "Backspace":
+          if (!$search.val() && selected.length) {
+            toggleItem(selected[selected.length - 1]);
+          }
+          return;
+        case "Tab":
+          hide();
+          return;
+      }
+    });
+
+    $editor.on("keydown", function (e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        finishEdit(true);
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        finishEdit(false);
+      }
+    });
+
+    $editor.on("blur", function () {
+      finishEdit(true);
+    });
+
+    setSelected(parseIDs($input.val()));
+
+    return {
+      setValue: function (ids) {
+        finishEdit(false);
+        hide();
+        setSelected(ids);
+      },
+    };
+  }
+
+  return {
+    selector: Object.keys(sources).map(function (type) {
+      return ".ui." + type + ".search.dropdown";
+    }).join(","),
+    init: function (root) {
+      const $root = $(root);
+      if (!$root.data("searchPicker")) {
+        const type = Object.keys(sources).filter(function (name) {
+          return $root.hasClass(name);
+        })[0];
+        if (!type) return null;
+        $root.data("searchPicker", create(root, sources[type]));
+      }
+      return $root.data("searchPicker");
+    },
+  };
+})();
+
+// 设置 $scope 内隐藏输入框名为 name 的远程搜索多选框的选中项
+function setSearchPickerValue($scope, name, ids) {
+  $scope.find("input[type=hidden]").filter(function () {
+    return this.name === name;
+  }).closest(searchPicker.selector).each(function () {
+    const picker = searchPicker.init(this);
+    if (picker) picker.setValue(ids);
+  });
+}
 
 $(document).ready(() => {
   try {
-    $(".ui.subscriptions.search.dropdown").dropdown({
-      clearable: true,
-      apiSettings: {
-        url: "/api/search-subscription?word={query}",
-        cache: false,
-      },
-    });
-  } catch (error) { }
-});
-
-$(document).ready(() => {
-  try {
-    $(".ui.tasks.search.dropdown").dropdown({
-      clearable: true,
-      apiSettings: {
-        url: "/api/search-tasks?word={query}",
-        cache: false,
-      },
-    });
-  } catch (error) { }
-});
-
-$(document).ready(() => {
-  try {
-    $(".ui.ddns.search.dropdown").dropdown({
-      clearable: true,
-      apiSettings: {
-        url: "/api/search-ddns?word={query}",
-        cache: false,
-      },
+    $(searchPicker.selector).each(function () {
+      searchPicker.init(this);
     });
   } catch (error) { }
 });

@@ -349,18 +349,28 @@ type searchResult struct {
 	Text  string `json:"text,omitempty"`
 }
 
+// sortedSearchResult 在通用搜索结果上附带排序值（服务器、订阅）
+type sortedSearchResult struct {
+	searchResult
+	DisplayIndex int `json:"display_index"`
+}
+
 func (ma *memberAPI) searchServer(c *gin.Context) {
 	var servers []model.Server
 	likeWord := "%" + c.Query("word") + "%"
-	singleton.DB.Select("id,name").Where("id = ? OR name LIKE ? OR tag LIKE ? OR note LIKE ?",
-		c.Query("word"), likeWord, likeWord, likeWord).Find(&servers)
+	// 与服务器管理页一致：排序值降序，相同则 ID 升序
+	singleton.DB.Select("id,name,display_index").Where("id = ? OR name LIKE ? OR tag LIKE ? OR note LIKE ?",
+		c.Query("word"), likeWord, likeWord, likeWord).Order("display_index DESC, id ASC").Find(&servers)
 
-	var resp []searchResult
+	var resp []sortedSearchResult
 	for i := 0; i < len(servers); i++ {
-		resp = append(resp, searchResult{
-			Value: servers[i].ID,
-			Name:  servers[i].Name,
-			Text:  servers[i].Name,
+		resp = append(resp, sortedSearchResult{
+			searchResult: searchResult{
+				Value: servers[i].ID,
+				Name:  servers[i].Name,
+				Text:  servers[i].Name,
+			},
+			DisplayIndex: servers[i].DisplayIndex,
 		})
 	}
 
@@ -377,11 +387,15 @@ func (ma *memberAPI) searchSubscription(c *gin.Context) {
 	}
 	var subscriptions []model.Subscription
 	likeWord := "%" + c.Query("word") + "%"
-	singleton.DB.Select("id,name").Where("id = ? OR name LIKE ? OR group_name LIKE ? OR note LIKE ?",
-		c.Query("word"), likeWord, likeWord, likeWord).Find(&subscriptions)
-	resp := make([]searchResult, 0, len(subscriptions))
+	// 与订阅管理页一致：排序值降序，相同则 ID 升序
+	singleton.DB.Select("id,name,display_index").Where("id = ? OR name LIKE ? OR group_name LIKE ? OR note LIKE ?",
+		c.Query("word"), likeWord, likeWord, likeWord).Order("display_index DESC, id ASC").Find(&subscriptions)
+	resp := make([]sortedSearchResult, 0, len(subscriptions))
 	for i := range subscriptions {
-		resp = append(resp, searchResult{Value: subscriptions[i].ID, Name: subscriptions[i].Name, Text: subscriptions[i].Name})
+		resp = append(resp, sortedSearchResult{
+			searchResult: searchResult{Value: subscriptions[i].ID, Name: subscriptions[i].Name, Text: subscriptions[i].Name},
+			DisplayIndex: subscriptions[i].DisplayIndex,
+		})
 	}
 	c.JSON(http.StatusOK, gin.H{"success": true, "results": resp})
 }
@@ -584,7 +598,7 @@ func (ma *memberAPI) searchTask(c *gin.Context) {
 	var tasks []model.Cron
 	likeWord := "%" + c.Query("word") + "%"
 	singleton.DB.Select("id,name").Where("id = ? OR name LIKE ?",
-		c.Query("word"), likeWord).Find(&tasks)
+		c.Query("word"), likeWord).Order("id ASC").Find(&tasks)
 
 	var resp []searchResult
 	for i := 0; i < len(tasks); i++ {
@@ -605,7 +619,7 @@ func (ma *memberAPI) searchDDNS(c *gin.Context) {
 	var ddns []model.DDNSProfile
 	likeWord := "%" + c.Query("word") + "%"
 	singleton.DB.Select("id,name").Where("id = ? OR name LIKE ?",
-		c.Query("word"), likeWord).Find(&ddns)
+		c.Query("word"), likeWord).Order("id ASC").Find(&ddns)
 
 	var resp []searchResult
 	for i := 0; i < len(ddns); i++ {
