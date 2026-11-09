@@ -1294,7 +1294,10 @@ const searchPicker = (function () {
 
   function fetchSearch(url, word) {
     return fetch(url + "?word=" + encodeURIComponent(word), { cache: "no-store" })
-      .then(function (resp) { return resp.ok ? resp.json() : {}; })
+      .then(function (resp) {
+        if (!resp.ok) throw new Error("HTTP " + resp.status);
+        return resp.json();
+      })
       .then(function (data) {
         return sortItems((data && data.results || []).map(function (item) {
           return {
@@ -1313,15 +1316,19 @@ const searchPicker = (function () {
     });
   }
 
-  // 全部条目（用于空搜索时的菜单和已选标签的名称），每个接口整页只加载一次
+  // 全部条目（用于空搜索时的菜单和已选标签的名称），每个接口整页只成功加载一次；
+  // 请求失败（断网、非 2xx）时清除缓存，下次打开菜单或回填时重新请求
   function loadCatalog(url) {
     if (!catalogPromises[url]) {
       catalogPromises[url] = fetchSearch(url, "")
-        .catch(function () { return []; })
         .then(function (list) {
           const names = {};
           list.forEach(function (item) { names[item.id] = item.name; });
           return { names: names, list: list };
+        })
+        .catch(function (error) {
+          delete catalogPromises[url];
+          throw error;
         });
     }
     return catalogPromises[url];
@@ -1417,10 +1424,10 @@ const searchPicker = (function () {
         renderMenu();
       }
       const run = function () {
-        Promise.all([loadCatalog(url), query ? fetchSearch(url, query) : null])
-          .then(function (result) {
+        (query ? fetchSearch(url, query) : loadCatalog(url).then(function (catalog) { return catalog.list; }))
+          .then(function (list) {
             if (current !== seq) return;
-            setItems(query ? result[1] : result[0].list, query);
+            setItems(list, query);
           })
           .catch(function () {
             if (current !== seq) return;
@@ -1487,6 +1494,8 @@ const searchPicker = (function () {
           if (!(id in names)) names[id] = catalog.names[id];
         });
         renderLabels();
+      }).catch(function () {
+        // 加载失败时标签保留 ID:x，下次打开菜单会重试并补上名称
       });
     }
 
