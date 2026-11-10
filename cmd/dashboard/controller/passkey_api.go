@@ -384,7 +384,7 @@ func (oa *oauth2controller) passkeyPasswordlessLogin(c *gin.Context) {
 	}
 	user := model.User{
 		Login:      row.UserLogin,
-		Name:       row.UserLogin,
+		Name:       "Admin",
 		SuperAdmin: true,
 	}
 	// 与密码登录相同的独立会话：每次登录一条记录，3 天有效
