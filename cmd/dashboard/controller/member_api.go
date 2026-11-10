@@ -1915,7 +1915,8 @@ func (ma *memberAPI) updateSetting(c *gin.Context) {
 		mygin.ClearSessionCookies(c)
 		audit.Record(c, audit.TypeAuth, "Logout", "all sessions revoked due to admin password change")
 	}
-	// 管理员名单是超管身份的唯一来源：名单移除后立即撤销不再属于名单的超管会话，
+	// 管理员名单是密码 / OAuth 超管身份的来源（通行密钥不受名单约束，免密登录会话用添加者，不在名单时取名单首个管理员）：
+	// 名单移除后立即撤销不再属于名单的超管会话，
 	// 防止被移除（或被盗）的旧会话在自然过期前保留完整超管权限。
 	// 与登录侧一致按忽略大小写、去除首尾空格比较；改密码分支已全量清空时此处为空操作。
 	if oldConf.Oauth2.Admin != singleton.Conf.Oauth2.Admin {
@@ -1937,7 +1938,6 @@ func (ma *memberAPI) updateSetting(c *gin.Context) {
 			singleton.DB.Unscoped().Where("super_admin = ? AND login IN ?", true, removedAdmins).Delete(&model.User{})
 			audit.Record(c, audit.TypeAuth, "Logout", "sessions revoked for removed admins: "+strings.Join(removedAdmins, ", "))
 		}
-		deletePasskeysOutsideAdmins(c, keep)
 	}
 	// 更新系统语言
 	singleton.InitLocalizer()

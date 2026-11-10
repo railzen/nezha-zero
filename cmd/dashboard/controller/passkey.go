@@ -18,7 +18,6 @@ import (
 	"github.com/go-webauthn/webauthn/webauthn"
 
 	"github.com/railzen/nezha-zero/model"
-	"github.com/railzen/nezha-zero/pkg/audit"
 	"github.com/railzen/nezha-zero/pkg/mygin"
 	"github.com/railzen/nezha-zero/service/singleton"
 )
@@ -316,10 +315,6 @@ func finishPasskeyAssertion(c *gin.Context, payload string, purpose passkeyPurpo
 	if matched == nil {
 		return nil, passkeyFail("通行密钥登陆失败", errors.New("unknown credential id"))
 	}
-	// 每次使用都以当前管理员名单为准，不能依赖设置页删除凭据成功。
-	if !isConfiguredAdmin(matched.UserLogin) {
-		return nil, errors.New("该通行密钥所属用户不在管理员名单中")
-	}
 
 	var validated *webauthn.Credential
 	if purpose == passkeyPurposeLogin {
@@ -363,9 +358,6 @@ func finishPasskeyAssertion(c *gin.Context, payload string, purpose passkeyPurpo
 
 // beginPasskeyRegistration 为当前会话签发注册仪式。同一认证器在同一域名下不能重复注册。
 func beginPasskeyRegistration(c *gin.Context, binding, login, name string) (*protocol.CredentialCreation, error) {
-	if !isConfiguredAdmin(login) {
-		return nil, errors.New("仅管理员名单中的用户可以添加通行密钥")
-	}
 	rp, err := passkeyRPFromRequest(c)
 	if err != nil {
 		return nil, err
@@ -424,10 +416,6 @@ func finishPasskeyRegistration(c *gin.Context, binding string, payload []byte) (
 	if !ok {
 		return nil, errors.New("通行密钥验证已过期，请重试")
 	}
-	// 注册选项签发后，归属用户仍可能被移出管理员名单。
-	if !isConfiguredAdmin(ce.UserLogin) {
-		return nil, errors.New("仅管理员名单中的用户可以添加通行密钥")
-	}
 	rp, err := passkeyRPFromRequest(c)
 	if err != nil {
 		return nil, err
@@ -484,20 +472,6 @@ func finishPasskeyRegistration(c *gin.Context, binding string, payload []byte) (
 	return row, nil
 }
 
-// isConfiguredAdmin 登录名是否在管理员名单内（忽略大小写与首尾空格，与密码 / OAuth 登录一致）。
-func isConfiguredAdmin(login string) bool {
-	login = strings.TrimSpace(login)
-	if login == "" {
-		return false
-	}
-	for _, admin := range strings.Split(singleton.Conf.Oauth2.Admin, ",") {
-		if strings.EqualFold(login, strings.TrimSpace(admin)) {
-			return true
-		}
-	}
-	return false
-}
-
 // verifySessionPasskey 校验当前会话提交的通行密钥断言，用于代替动态验证码完成二次验证。
 // 与 verifySessionTwoFactor 共用每会话试错计数。通过时返回空字符串。
 func verifySessionPasskey(c *gin.Context, assertion string) string {
@@ -534,31 +508,4 @@ func verifySessionSecondFactor(c *gin.Context, code, passkeyAssertion string) st
 		return verifySessionPasskey(c, passkeyAssertion)
 	}
 	return verifySessionTwoFactor(c, code)
-}
-
-// deletePasskeysOutsideAdmins 管理员名单变更后，删除归属者已不在名单（keep 为小写登录名集合）内的通行密钥，
-// 不留可代替二次验证的残留凭据。
-func deletePasskeysOutsideAdmins(c *gin.Context, keep map[string]struct{}) {
-	var passkeys []model.Passkey
-	if err := singleton.DB.Select("id", "name", "user_login").Find(&passkeys).Error; err != nil {
-		log.Printf("NEZHA>> list passkeys failed: %v", err)
-		return
-	}
-	var ids []uint64
-	var desc []string
-	for _, pk := range passkeys {
-		if _, ok := keep[strings.ToLower(strings.TrimSpace(pk.UserLogin))]; !ok {
-			ids = append(ids, pk.ID)
-			desc = append(desc, fmt.Sprintf("%q (owner: %s)", pk.Name, pk.UserLogin))
-		}
-	}
-	if len(ids) == 0 {
-		return
-	}
-	if err := singleton.DB.Unscoped().Where("id IN ?", ids).Delete(&model.Passkey{}).Error; err != nil {
-		log.Printf("NEZHA>> delete passkeys of removed admins failed: %v", err)
-	} else {
-		audit.Record(c, audit.TypeSecurity, "Passkey deleted", "owner removed from admin list: "+strings.Join(desc, ", "))
-	}
-	singleton.RefreshPasskeyCount()
 }

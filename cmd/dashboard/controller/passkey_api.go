@@ -382,8 +382,30 @@ func (oa *oauth2controller) passkeyPasswordlessLogin(c *gin.Context) {
 		c.JSON(http.StatusOK, model.Response{Code: http.StatusForbidden, Message: err.Error()})
 		return
 	}
+	// 通行密钥不受用户名限制：添加者仍在管理员名单中时用添加者用户名，
+	// 否则取名单中的第一个，避免沿用已不在名单的旧用户名，在名单变更时被当作已移除的管理员注销。
+	// 名单为空时退回添加者用户名。
+	login := row.UserLogin
+	firstAdmin := ""
+	ownerListed := false
+	for _, admin := range strings.Split(singleton.Conf.Oauth2.Admin, ",") {
+		admin = strings.TrimSpace(admin)
+		if admin == "" {
+			continue
+		}
+		if firstAdmin == "" {
+			firstAdmin = admin
+		}
+		if strings.EqualFold(admin, strings.TrimSpace(row.UserLogin)) {
+			ownerListed = true
+			break
+		}
+	}
+	if !ownerListed && firstAdmin != "" {
+		login = firstAdmin
+	}
 	user := model.User{
-		Login:      row.UserLogin,
+		Login:      login,
 		Name:       "Admin",
 		SuperAdmin: true,
 	}
@@ -404,7 +426,7 @@ func (oa *oauth2controller) passkeyPasswordlessLogin(c *gin.Context) {
 	mygin.SetCSRFCookie(c)
 
 	c.JSON(http.StatusOK, model.Response{Code: http.StatusOK})
-	audit.Record(c, audit.TypeAuth, "Passkey login succeeded", fmt.Sprintf("user: %s, passkey: %q", user.Login, row.Name))
+	audit.Record(c, audit.TypeAuth, "Passkey login succeeded", fmt.Sprintf("user: %s, passkey: %q, owner: %s", user.Login, row.Name, row.UserLogin))
 }
 
 // passkeySecondFactor 登录二次验证：用通行密钥代替动态验证码。流程与 twoFactorVerify 一致，
