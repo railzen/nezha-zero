@@ -59,7 +59,10 @@ type passkeyCeremony struct {
 	UserLogin string // 仅注册：归属的管理员登录名
 }
 
-var passkeyCeremonyMu sync.Mutex
+var (
+	passkeyCeremonyMu sync.Mutex
+	passkeyMutationMu sync.Mutex
+)
 
 // passkeyFailure 对外只展示 msg，cause 用于服务端日志排查（如 Origin 不匹配）。
 type passkeyFailure struct {
@@ -300,6 +303,9 @@ func finishPasskeyAssertion(c *gin.Context, payload string, purpose passkeyPurpo
 		return nil, passkeyFail("通行密钥需要通过 HTTPS 域名访问面板", err)
 	}
 
+	passkeyMutationMu.Lock()
+	defer passkeyMutationMu.Unlock()
+
 	rows, creds, err := loadPasskeysForRP(rp.ID)
 	if err != nil {
 		return nil, passkeyFail("读取通行密钥失败", err)
@@ -431,6 +437,13 @@ func finishPasskeyRegistration(c *gin.Context, binding string, payload []byte) (
 	if err != nil {
 		return nil, passkeyFail("通行密钥注册失败，请重试", err)
 	}
+	data, err := json.Marshal(cred)
+	if err != nil {
+		return nil, passkeyFail("通行密钥注册失败，请重试", err)
+	}
+
+	passkeyMutationMu.Lock()
+	defer passkeyMutationMu.Unlock()
 
 	// 全站共用一个用户句柄：注册期间若已有其他句柄的通行密钥写入，要求重试
 	handle, err := existingPasskeyHandle()
@@ -448,10 +461,6 @@ func finishPasskeyRegistration(c *gin.Context, binding string, payload []byte) (
 		return nil, fmt.Errorf("最多只能添加 %d 个通行密钥", passkeyMaxCount)
 	}
 
-	data, err := json.Marshal(cred)
-	if err != nil {
-		return nil, passkeyFail("通行密钥注册失败，请重试", err)
-	}
 	row := &model.Passkey{
 		Name:         ce.Name,
 		UserLogin:    ce.UserLogin,

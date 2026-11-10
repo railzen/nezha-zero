@@ -121,11 +121,16 @@ func (ma *memberAPI) passkey(c *gin.Context) {
 		if !ma.passkeyRequireTwoFactor(c, req.Code, req.Passkey, "Passkey delete failed") {
 			return
 		}
-		if err := singleton.DB.Unscoped().Delete(&model.Passkey{}, "id = ?", row.ID).Error; err != nil {
+		passkeyMutationMu.Lock()
+		deleteErr := singleton.DB.Unscoped().Delete(&model.Passkey{}, "id = ?", row.ID).Error
+		if deleteErr == nil {
+			singleton.RefreshPasskeyCount()
+		}
+		passkeyMutationMu.Unlock()
+		if deleteErr != nil {
 			c.JSON(http.StatusOK, model.Response{Code: http.StatusInternalServerError, Message: "删除失败，请稍后重试"})
 			return
 		}
-		singleton.RefreshPasskeyCount()
 		// 删除通常意味着设备丢失或凭据不再可信：注销除当前会话外的全部会话，并清空敏感操作授权
 		singleton.DB.Unscoped().Where("token <> ?", user.Token).Delete(&model.User{})
 		mygin.ResetTwoFactorGrants()
