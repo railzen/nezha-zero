@@ -178,6 +178,7 @@
 
         function doResize() {
             fitAddon.fit()
+            if (!socket || socket.readyState !== WebSocket.OPEN) return;
 
             const w = fitAddon.proposeDimensions();
             const prefix = new Int8Array([1]);
@@ -255,16 +256,156 @@
             useStyle: true,
             cursorBlink: true,
         });
-        const socket = new WebSocket((window.location.protocol == 'https:' ? 'wss' : 'ws') + '://' + window.location.host + '/terminal/' + '{{.SessionID}}');
-
-        const attachAddon = new AttachAddon.AttachAddon(socket);
-        term.loadAddon(attachAddon);
+        const terminalServerID = '{{.ServerID}}';
+        // connecting：建立中；connected：已连接；disconnected：已断开，按回车重连
+        let terminalState = 'connecting';
+        let socket = null;
+        let attachAddon = null;
 
         const fitAddon = new FitAddon.FitAddon();
         term.loadAddon(fitAddon);
 
+        function getCSRFToken() {
+            const csrfMatch = document.cookie.match(new RegExp('(^| )nz-csrf=([^;]+)'));
+            return csrfMatch ? decodeURIComponent(csrfMatch[2]) : '';
+        }
+
+        // 提示紧接在输出结束处：光标在行首时不再额外换行
+        function writeTerminalNotice(line, color) {
+            const prefix = term.buffer.active.cursorX === 0 ? '' : '\r\n';
+            term.write(prefix + '\x1b[' + (color || '1;31') + 'm' + line + '\x1b[0m\r\n');
+            term.scrollToBottom();
+        }
+
+        function terminalTimestamp() {
+            return new Date().toLocaleString('en-US', { hour12: false });
+        }
+
+        // 断开提示后缀：Enter 用黄字高亮，之后恢复为红字
+        const RECONNECT_HINT = ' - Press \x1b[1;33mEnter\x1b[1;31m to reconnect, any other key to close';
+
+        let closeWindowFailed = false;
+        function closeTerminalWindow() {
+            window.close();
+            // 非脚本打开的窗口（如直接访问/书签）浏览器不允许关闭，提示一次手动关闭
+            setTimeout(function () {
+                if (window.closed || closeWindowFailed) return;
+                closeWindowFailed = true;
+                writeTerminalNotice('Unable to close this window automatically, please close it manually' + RECONNECT_HINT);
+            }, 300);
+        }
+
+        // 已断开状态下的按键：回车重连，其他任意键关闭窗口
+        function handleDisconnectedKey(key) {
+            if (terminalState !== 'disconnected') return;
+            if (key === '\r' || key === '\n') {
+                reconnectTerminal();
+            } else {
+                closeTerminalWindow();
+            }
+        }
+
+        function connectTerminal(sessionId, isReconnect) {
+            terminalState = 'connecting';
+            const ws = new WebSocket((window.location.protocol == 'https:' ? 'wss' : 'ws') + '://' + window.location.host + '/terminal/' + sessionId);
+            socket = ws;
+            attachAddon = new AttachAddon.AttachAddon(ws);
+            term.loadAddon(attachAddon);
+
+            ws.onopen = () => {
+                if (socket !== ws) return;
+                terminalState = 'connected';
+                if (isReconnect) {
+                    writeTerminalNotice('Reconnected (new session) - ' + terminalTimestamp(), '1;32');
+                }
+                onResize()
+            }
+
+            ws.onclose = () => {
+                if (socket !== ws) return;
+                const wasConnected = terminalState === 'connected';
+                terminalState = 'disconnected';
+                if (attachAddon) {
+                    attachAddon.dispose();
+                    attachAddon = null;
+                }
+                // 关闭鼠标上报、焦点上报与应用光标模式，保证断开后能滚动查看和选择复制历史输出，
+                // 且切回窗口时不会产生焦点事件被当成按键关闭窗口；
+                // 仅在确实处于备用屏（vim/top 等）时退出，否则 ?1049l 会把光标恢复到左上角
+                let resetSeq = '\x1b[0m\x1b[?1l\x1b[?1000l\x1b[?1002l\x1b[?1003l\x1b[?1006l\x1b[?1004l\x1b[?2004l\x1b[?25h';
+                if (term.buffer.active.type === 'alternate') resetSeq = '\x1b[?1049l' + resetSeq;
+                term.write(resetSeq);
+                writeTerminalNotice((wasConnected
+                    ? 'Session stopped - ' + terminalTimestamp()
+                    : 'Connection failed - check the WebSocket reverse proxy for /terminal/*') + RECONNECT_HINT);
+            }
+        }
+
+        async function reconnectTerminal() {
+            terminalState = 'connecting';
+            writeTerminalNotice('Reconnecting...', '1;33');
+            let message = '';
+            try {
+                // 复用原有 POST /terminal：成功时返回新的终端页，从中取出新会话 ID，页面本身不刷新
+                const resp = await fetch('/terminal', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRF-Token': getCSRFToken(),
+                    },
+                    body: new URLSearchParams({
+                        Host: window.location.host,
+                        Protocol: window.location.protocol,
+                        ID: terminalServerID,
+                    }),
+                });
+                const html = await resp.text();
+                const matched = resp.ok && html.match(/connectTerminal\('([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})', false\)/);
+                if (matched) {
+                    connectTerminal(matched[1], true);
+                    return;
+                }
+                // 失败时返回的是错误页或二次验证页
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+                if (resp.redirected && new URL(resp.url).pathname === '/login') {
+                    message = 'Login expired - log in again and reopen the terminal';
+                } else if (doc.getElementById('twoFactorGrantResubmitForm')) {
+                    message = 'Two-factor authorization expired - reopen the terminal from the server page';
+                } else {
+                    let reason = '';
+                    try {
+                        reason = JSON.parse(html).message || '';
+                    } catch (e) {
+                        const msgEl = doc.querySelector('.ui.message');
+                        reason = msgEl ? msgEl.textContent.trim().replace(/\s+/g, ' ') : '';
+                    }
+                    message = 'Reconnect failed (HTTP ' + resp.status + ')' + (reason ? ': ' + reason : '');
+                }
+            } catch (error) {
+                message = 'Reconnect failed: ' + error;
+            }
+            terminalState = 'disconnected';
+            writeTerminalNotice(message.replace(/[\x00-\x1f\x7f]/g, '') + RECONNECT_HINT);
+        }
+
+        // 带 Ctrl/Cmd/Alt 的组合键（复制等）与粘贴不算"任意键"，避免复制断开前输出时误关窗口
+        let lastKeyHadModifier = false;
+        let pastingIntoTerminal = false;
+        document.getElementById('terminal-container').addEventListener('paste', function () {
+            pastingIntoTerminal = true;
+            setTimeout(function () { pastingIntoTerminal = false; }, 0);
+        }, true);
+
+        term.onData(function (data) {
+            if (terminalState !== 'disconnected') return;
+            if (lastKeyHadModifier || pastingIntoTerminal) return;
+            handleDisconnectedKey(data);
+        });
+
         term.attachCustomKeyEventHandler(function (ev) {
             if (ev.type !== 'keydown') return true;
+            lastKeyHadModifier = ev.ctrlKey || ev.metaKey || ev.altKey;
             if (!appleTerminalDevice && ev.ctrlKey && !ev.shiftKey && !ev.altKey && !ev.metaKey &&
                 (ev.key === 'v' || ev.key === 'V' || ev.keyCode === 86)) {
                 return false;
@@ -437,7 +578,14 @@
                 if (type !== 'insertText' && type !== 'insertCompositionText' &&
                     type !== 'insertReplacementText') return;
                 if (type === 'insertCompositionText' && ev.isComposing) return;
-                if (socket.readyState !== WebSocket.OPEN) return;
+                if (terminalState === 'disconnected') {
+                    handleDisconnectedKey(ev.data);
+                    lastKeyWasIME = false;
+                    term.textarea.value = '';
+                    ev.stopImmediatePropagation();
+                    return;
+                }
+                if (!socket || socket.readyState !== WebSocket.OPEN) return;
 
                 let data = ev.data;
                 if (controlActive) {
@@ -451,18 +599,7 @@
             }, true);
         }
 
-        socket.onopen = () => {
-            onResize()
-        }
-
-        socket.onclose = () => {
-            alert('{{tr "TerminalConnectionTimeOutOrSessionEnded"}}')
-            window.close()
-        }
-
-        socket.onerror = () => {
-            alert('{{tr "TerminalConnectionFailed"}}')
-        }
+        connectTerminal('{{.SessionID}}', false);
 
         if (mobileTerminalDevice) {
             const keyBar = document.getElementById('terminal-keys');
@@ -475,7 +612,13 @@
 
             keyBar.addEventListener('click', function (ev) {
                 const btn = ev.target.closest('button[data-key]');
-                if (!btn || socket.readyState !== WebSocket.OPEN) return;
+                if (!btn) return;
+                if (terminalState === 'disconnected') {
+                    setControlActive(false);
+                    handleDisconnectedKey(btn.getAttribute('data-key'));
+                    return;
+                }
+                if (!socket || socket.readyState !== WebSocket.OPEN) return;
                 const key = btn.getAttribute('data-key');
                 const withControl = controlActive;
                 setControlActive(false);
@@ -500,8 +643,7 @@
                 idField.name = 'id';
                 idField.value = '{{.ServerID}}';
                 form.appendChild(idField);
-                const csrfMatch = document.cookie.match(new RegExp('(^| )nz-csrf=([^;]+)'));
-                const csrfToken = csrfMatch ? decodeURIComponent(csrfMatch[2]) : '';
+                const csrfToken = getCSRFToken();
                 if (csrfToken) {
                     const csrfField = document.createElement('input');
                     csrfField.type = 'hidden';
